@@ -25,9 +25,11 @@ packages = ["selfctx"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["fixtures"]
 
 [tool.ruff]
 line-length = 110
+extend-exclude = ["tests/fixtures"]
 
 [tool.mypy]
 strict = true

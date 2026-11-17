@@ -113,3 +113,9 @@ def test_log_has_one_record_per_turn(tools: Any, tmp_path: Path) -> None:
     records = [json.loads(line) for line in (tmp_path / "log.jsonl").read_text().splitlines()]
     assert [(r["turn"], r["max_index"], r["items_before"], r["items_after"]) for r in records] == [
         (1, 0, 1, 2), (2, 1, 2, 3), (3, -1, 3, 1)]
+
+
+def test_echoed_tag_is_stripped_from_stored_output(tools: Any, tmp_path: Path) -> None:
+    client = Scripted(["[1] model_output\n[1] model_output\n" + _r(0), _r(1, done="ok")])
+    _run(client, tools, tmp_path)
+    assert client.calls[1][2]["content"] == "[1] model_output\n" + _r(0)

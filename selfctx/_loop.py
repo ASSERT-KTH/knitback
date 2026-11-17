@@ -13,6 +13,7 @@ from agentknit import dispatch
 from ._items import Item, apply, render
 from ._protocol import FileRequest, ProtocolError, Request, parse, system_prompt
 
+_ECHOED_TAGS = re.compile(r"\A\s*(?:\[\d+\] \w+\s*\n)+")
 _ENVELOPE = re.compile(r"\A<[0-9a-f]{8}[^>]*>\n?(.*?)</[0-9a-f]{8}>\s*\Z", re.DOTALL)
 
 
@@ -75,9 +76,12 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
         for turn in range(1, max_turns + 1):
             response = client.chat.completions.create(
                 model=model, messages=render(items, system), **(request_params or {}))
-            reply = response.choices[0].message.content or ""
+            # Models imitate the `[i] kind` header of past outputs; the host adds it, so drop the echo.
+            reply = _ECHOED_TAGS.sub("", response.choices[0].message.content or "")
             record: dict[str, Any] = {"turn": turn, "items_before": len(items),
-                                      "usage": _usage(response), "reply": reply}
+                                      "usage": _usage(response),
+                                      "finish_reason": getattr(response.choices[0], "finish_reason", None),
+                                      "reply": reply}
             try:
                 out = parse(reply, len(items), tools)
             except ProtocolError as exc:
