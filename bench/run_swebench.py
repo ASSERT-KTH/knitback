@@ -2,7 +2,7 @@
 
 Per instance: pull the image, copy `/testbed` to the host, run a container with that copy bind-mounted at
 `/testbed`, run the selfctx loop with cwd = the copy (file requests and edits act on the host copy,
-`exec_shell` runs inside the container in the `testbed` conda env), save the diff as a prediction,
+`exec_shell` runs inside the container, without network, in the `testbed` conda env), save the diff as a prediction,
 evaluate it with `swebench.harness.run_evaluation` (bench/.venv), then remove container and image.
 
 Usage (from the repo root, with the selfctx venv):
@@ -69,6 +69,19 @@ def container_shell(container: str) -> Any:
     return exec_shell
 
 
+def confined(name: str, root: Path) -> Any:
+    """File tool `name`, refusing paths outside `root` (the host copy of the repo)."""
+    fn = TOOL_LIBRARY[{"read_file": "t_read", "write_file": "t_write", "str_replace": "t_update"}[name]]
+
+    def tool(path: str, **kwargs: Any) -> Any:
+        resolved = (root / os.path.expanduser(path)).resolve()
+        if not resolved.is_relative_to(root.resolve()):
+            return f"ERROR: {path} is outside the repository", {"ok": False, "error": "outside repository"}
+        return fn(path=str(resolved), **kwargs)
+
+    return tool
+
+
 def stats(log: Path) -> dict[str, Any]:
     records = [json.loads(line) for line in log.read_text().splitlines()]
     went_back = [r["turn"] for r in records
@@ -93,13 +106,17 @@ def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool) -> dict
     tmp = sh("docker", "create", image, capture=True).strip()
     sh("docker", "cp", f"{tmp}:/testbed", str(workdir))
     sh("docker", "rm", tmp)
-    sh("docker", "run", "-d", "--name", container, "-v", f"{workdir}:/testbed", image, "sleep", "infinity")
+    # No network: the environment is preinstalled, and with network the model can fetch the upstream fix.
+    sh("docker", "run", "-d", "--network", "none", "--name", container, "-v", f"{workdir}:/testbed", image,
+       "sleep", "infinity")
     sh("docker", "exec", container, "git", "config", "--global", "--add", "safe.directory", "/testbed")
 
     schema = agentknit.load_specification("k3.1-pro", inference_db="kimi-coding")
     specs, tool_dispatch = agentknit.default_tool_spec()
     tool_specs: list[dict[str, Any]] = [s for s in specs if s["function"]["name"] != "read_file"]  # type: ignore[index]
     tool_dispatch = dict(tool_dispatch) | {"exec_shell": {"python_function": container_shell(container)}}
+    for name in ("read_file", "write_file", "str_replace"):  # the host holds other runs' patches
+        tool_dispatch[name] = {**tool_dispatch[name], "python_function": confined(name, workdir)}
 
     started = time.time()
     cwd = os.getcwd()

@@ -11,3 +11,4 @@ plan-*.md
 bench/results/*/testbed/
 bench/results/*/eval/logs/
 bench/validate/logs/
+bench/results.err

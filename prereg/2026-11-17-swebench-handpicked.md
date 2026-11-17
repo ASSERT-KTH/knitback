@@ -38,3 +38,14 @@ use the ability to discard context?
 - P3 or P4 fails: fix robustness (schema, error handling) first.
 - R = 0: inspect trajectories for a loop-level cause before attributing it to the model.
 - With 5 tasks, R is reported, not compared to any leaderboard number.
+
+## Amendment 1 (2026-11-17, before the rerun)
+- Run 1 (`bench/results-run1-network/`) is excluded from the predictions. Its task containers had network
+  access: at turn 9 of `django__django-11400` the model fetched the accepted upstream patch
+  (`https://github.com/django/django/pull/11400.patch`) and copied it; its "resolved" is void.
+  `pytest-dev__pytest-10356` (not resolved, no fetch found) finished too; the run was stopped during
+  `sympy__sympy-14248`.
+- Harness changes, the only ones: task containers run with `--network none`; host file tools
+  (file requests, `write_file`, `str_replace`) refuse paths outside the task's repository copy, since the
+  host holds run 1's patches.
+- Agent, prompt, tasks, measures, predictions and decision rule are unchanged. All 5 tasks are rerun.
