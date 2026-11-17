@@ -1,0 +1,14 @@
+{
+ "instance_id": "sphinx-doc__sphinx-9461",
+ "resolved": false,
+ "final": "Fixed autodoc handling of `@classmethod`-wrapped properties by recovering the original property descriptor during member discovery and import, preserving docstrings, abstract markers, and type annotations, including for inherited members. All 166 autodoc tests pass.",
+ "crash": null,
+ "duration_s": 513,
+ "patch_lines": 70,
+ "turns": 23,
+ "went_back_turns": [],
+ "protocol_errors": 0,
+ "peak_items": 78,
+ "peak_prompt_tokens": 44332,
+ "total_prompt_tokens": 669308
+}

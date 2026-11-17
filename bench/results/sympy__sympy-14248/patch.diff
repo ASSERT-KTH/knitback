@@ -1,0 +1,69 @@
+diff --git a/sympy/printing/latex.py b/sympy/printing/latex.py
+index 8253b2f68..5be4a592c 100644
+--- a/sympy/printing/latex.py
++++ b/sympy/printing/latex.py
+@@ -1479,7 +1479,7 @@ def _print_Adjoint(self, expr):
+     def _print_MatAdd(self, expr):
+         terms = list(expr.args)
+         tex = " + ".join(map(self._print, terms))
+-        return tex
++        return tex.replace(' + -', ' - ')
+ 
+     def _print_MatMul(self, expr):
+         from sympy import Add, MatAdd, HadamardProduct
+@@ -1488,6 +1488,8 @@ def parens(x):
+             if isinstance(x, (Add, MatAdd, HadamardProduct)):
+                 return r"\left(%s\right)" % self._print(x)
+             return self._print(x)
++        if expr.args[0] == -1:
++            return '-' + ' '.join(map(parens, expr.args[1:]))
+         return ' '.join(map(parens, expr.args))
+ 
+     def _print_Mod(self, expr, exp=None):
+diff --git a/sympy/printing/pretty/pretty.py b/sympy/printing/pretty/pretty.py
+index db24f4c61..af278cc04 100644
+--- a/sympy/printing/pretty/pretty.py
++++ b/sympy/printing/pretty/pretty.py
+@@ -819,7 +819,18 @@ def _print_BlockMatrix(self, B):
+         return self._print(B.blocks)
+ 
+     def _print_MatAdd(self, expr):
+-        return self._print_seq(expr.args, None, None, ' + ')
++        from sympy import MatMul
++        pforms = []
++        for i, arg in enumerate(expr.args):
++            if i > 0:
++                if arg.is_MatMul and arg.args[0] == -1:
++                    arg = MatMul(*arg.args[1:])
++                    pforms.append(' - ')
++                else:
++                    pforms.append(' + ')
++            pforms.append(self._print(arg))
++        return prettyForm(binding=prettyForm.ADD,
++            *stringPict.next(*pforms))
+ 
+     def _print_MatMul(self, expr):
+         args = list(expr.args)
+diff --git a/sympy/printing/str.py b/sympy/printing/str.py
+index 0baefe0f7..cc5476ec1 100644
+--- a/sympy/printing/str.py
++++ b/sympy/printing/str.py
+@@ -304,6 +304,9 @@ def _print_Mul(self, expr):
+             return sign + '*'.join(a_str) + "/(%s)" % '*'.join(b_str)
+ 
+     def _print_MatMul(self, expr):
++        if expr.args[0] == -1:
++            return '-' + '*'.join([self.parenthesize(arg, precedence(expr))
++                for arg in expr.args[1:]])
+         return '*'.join([self.parenthesize(arg, precedence(expr))
+             for arg in expr.args])
+ 
+@@ -313,7 +316,7 @@ def _print_HadamardProduct(self, expr):
+ 
+     def _print_MatAdd(self, expr):
+         return ' + '.join([self.parenthesize(arg, precedence(expr))
+-            for arg in expr.args])
++            for arg in expr.args]).replace('+ -', '- ')
+ 
+     def _print_NaN(self, expr):
+         return 'nan'

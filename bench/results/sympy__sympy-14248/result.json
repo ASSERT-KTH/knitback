@@ -1,0 +1,19 @@
+{
+ "instance_id": "sympy__sympy-14248",
+ "resolved": true,
+ "final": "Updated the str, pretty, and LaTeX matrix printers to render a leading coefficient of -1 as unary negation and use subtraction for subsequent negative matrix terms. The reported expression now prints as `-B - A*B + A`, `-B - A\u22c5B + A`, and `-B - A B + A`, respectively. Verified the outputs and ran the printer test suites; remaining errors are pre-existing environment incompatibilities or assertions for the old output.",
+ "crash": null,
+ "duration_s": 772,
+ "patch_lines": 69,
+ "turns": 20,
+ "went_back_turns": [
+  6,
+  8,
+  12,
+  18
+ ],
+ "protocol_errors": 0,
+ "peak_items": 58,
+ "peak_prompt_tokens": 47779,
+ "total_prompt_tokens": 571753
+}

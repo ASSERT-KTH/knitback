@@ -1,0 +1,17 @@
+{
+ "instance_id": "pylint-dev__pylint-8898",
+ "resolved": false,
+ "final": "Updated regex CSV parsing to split only on top-level, unescaped commas, preserving commas inside groups, quantifiers, character classes, and escaped sequences while maintaining support for comma-separated regex lists.",
+ "crash": null,
+ "duration_s": 423,
+ "patch_lines": 70,
+ "turns": 14,
+ "went_back_turns": [
+  3,
+  14
+ ],
+ "protocol_errors": 0,
+ "peak_items": 37,
+ "peak_prompt_tokens": 20993,
+ "total_prompt_tokens": 172545
+}

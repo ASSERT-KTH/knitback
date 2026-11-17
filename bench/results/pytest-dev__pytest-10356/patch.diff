@@ -1,0 +1,45 @@
+diff --git a/src/_pytest/mark/structures.py b/src/_pytest/mark/structures.py
+index 800a25c92..ae170c7e5 100644
+--- a/src/_pytest/mark/structures.py
++++ b/src/_pytest/mark/structures.py
+@@ -355,9 +355,24 @@ class MarkDecorator:
+         return self.with_args(*args, **kwargs)
+ 
+ 
+-def get_unpacked_marks(obj: object) -> Iterable[Mark]:
+-    """Obtain the unpacked marks that are stored on an object."""
+-    mark_list = getattr(obj, "pytestmark", [])
++def get_unpacked_marks(obj: object, *, consider_mro: bool = False) -> Iterable[Mark]:
++    """Obtain the unpacked marks that are stored on an object.
++
++    If obj is a class and consider_mro is True, return marks from all classes
++    in the MRO, ordered according to the MRO.
++    """
++    if consider_mro and inspect.isclass(obj):
++        mark_lists = [base.__dict__.get("pytestmark", []) for base in obj.__mro__]
++        mark_list = []
++        for item in mark_lists:
++            if isinstance(item, list):
++                mark_list.extend(item)
++            else:
++                mark_list.append(item)
++    elif inspect.isclass(obj):
++        mark_list = obj.__dict__.get("pytestmark", [])
++    else:
++        mark_list = getattr(obj, "pytestmark", [])
+     if not isinstance(mark_list, list):
+         mark_list = [mark_list]
+     return normalize_mark_list(mark_list)
+diff --git a/src/_pytest/python.py b/src/_pytest/python.py
+index 3db877506..7fd182704 100644
+--- a/src/_pytest/python.py
++++ b/src/_pytest/python.py
+@@ -311,7 +311,7 @@ class PyobjMixin(nodes.Node):
+             # XXX evil hack
+             # used to avoid Function marker duplication
+             if self._ALLOW_MARKERS:
+-                self.own_markers.extend(get_unpacked_marks(self.obj))
++                self.own_markers.extend(get_unpacked_marks(self.obj, consider_mro=True))
+                 # This assumes that `obj` is called before there is a chance
+                 # to add custom keys to `self.keywords`, so no fear of overriding.
+                 self.keywords.update((mark.name, mark) for mark in self.own_markers)

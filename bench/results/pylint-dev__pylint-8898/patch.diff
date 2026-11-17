@@ -1,0 +1,70 @@
+diff --git a/pylint/config/argument.py b/pylint/config/argument.py
+index 30a5fd175..0120245a5 100644
+--- a/pylint/config/argument.py
++++ b/pylint/config/argument.py
+@@ -111,12 +111,61 @@ def _regex_transformer(value: str) -> Pattern[str]:
+         raise argparse.ArgumentTypeError(msg) from e
+ 
+ 
++def _split_regexp_csv(value: str) -> list[str]:
++    """Split a comma separated list of regular expressions.
++
++    Commas in groups, quantifiers, character classes, or escaped with a
++    backslash are part of the regular expression rather than separators.
++    """
++    patterns: list[str] = []
++    pattern: list[str] = []
++    group_depth = 0
++    quantifier_depth = 0
++    in_character_class = False
++    escaped = False
++
++    for char in value:
++        if escaped:
++            pattern.append(char)
++            escaped = False
++            continue
++        if char == "\\":
++            pattern.append(char)
++            escaped = True
++            continue
++        if in_character_class:
++            pattern.append(char)
++            if char == "]":
++                in_character_class = False
++            continue
++
++        if char == "[":
++            in_character_class = True
++        elif char == "(":
++            group_depth += 1
++        elif char == ")":
++            group_depth = max(0, group_depth - 1)
++        elif char == "{":
++            quantifier_depth += 1
++        elif char == "}":
++            quantifier_depth = max(0, quantifier_depth - 1)
++        elif char == "," and not group_depth and not quantifier_depth:
++            expression = "".join(pattern).strip()
++            if expression:
++                patterns.append(expression)
++            pattern = []
++            continue
++        pattern.append(char)
++
++    expression = "".join(pattern).strip()
++    if expression:
++        patterns.append(expression)
++    return patterns
++
++
+ def _regexp_csv_transfomer(value: str) -> Sequence[Pattern[str]]:
+     """Transforms a comma separated list of regular expressions."""
+-    patterns: list[Pattern[str]] = []
+-    for pattern in _csv_transformer(value):
+-        patterns.append(_regex_transformer(pattern))
+-    return patterns
++    return [_regex_transformer(pattern) for pattern in _split_regexp_csv(value)]
+ 
+ 
+ def _regexp_paths_csv_transfomer(value: str) -> Sequence[Pattern[str]]:

@@ -1,0 +1,16 @@
+{
+ "instance_id": "pytest-dev__pytest-10356",
+ "resolved": false,
+ "final": "Updated class marker collection to merge `pytestmark` entries from every class in the MRO, preserving subclass precedence and avoiding duplicate inherited marks. Non-class marker behavior remains unchanged. Focused tests and the broader Python suite pass (375 passed; Hypothesis-dependent module excluded because its dependency is unavailable).",
+ "crash": null,
+ "duration_s": 302,
+ "patch_lines": 45,
+ "turns": 14,
+ "went_back_turns": [
+  5
+ ],
+ "protocol_errors": 0,
+ "peak_items": 47,
+ "peak_prompt_tokens": 20245,
+ "total_prompt_tokens": 181154
+}
