@@ -6,8 +6,12 @@ the model is aware of its own context and maintains it itself.
 ## Context model
 
 - The context is a sequence of items, indexed from 0.
+- One item is one file excerpt or one tool result.
+- Every item is shown to the model with its index (e.g. a `[17]` tag),
+  so the model knows what to keep.
 - Items are only ever appended or truncated, never edited in place,
   so every turn's prompt shares a prefix with the previous one (prompt-cache friendly).
+- No item is protected: the model may truncate down to and including the task description.
 
 ## Turn protocol
 
@@ -16,8 +20,15 @@ At each turn, the model outputs:
 1. `max_index`: the last item (inclusive) kept for the next turn.
    Items after it are discarded, which lets the model go "back" in context
    and drop recent additions it no longer needs.
-2. `files`: file excerpts to append at the next turn, each as a path plus line range.
-3. `tool_calls`: tool calls to execute; their results are appended at the next turn.
+2. An ordered list of requests, each one either:
+   - a file excerpt: a path plus line range, or
+   - a tool call, whose result is the new item.
 
-The next turn's context is items `0..max_index`, followed by the new items
-produced by step 2 and step 3.
+The next turn's context is items `0..max_index`, followed by one new item per request,
+in the order the model listed them.
+The prompt tells the model that it controls this order.
+
+## Implementation
+
+The MVP is built on agentknit (`~/workspace/prototypes/agentknit`),
+which provides LLM endpoint access and tool execution.
