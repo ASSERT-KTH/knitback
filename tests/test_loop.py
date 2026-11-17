@@ -156,3 +156,16 @@ def test_extra_tool_key_in_args_is_not_run_and_names_expected_params(tools: Any,
     _run(client, tools, tmp_path)
     content = client.calls[1][3]["content"]
     assert content.startswith("[2] error") and "unknown argument(s) tool" in content and "command" in content
+
+
+def test_log_records_kind_and_size_of_new_items(tools: Any, tmp_path: Path) -> None:
+    _run(Scripted([_r(0, [{"tool": "exec_shell", "args": {"command": "echo hi"}}]), _r(0, done="ok")]),
+         tools, tmp_path)
+    first = json.loads((tmp_path / "log.jsonl").read_text().splitlines()[0])
+    assert [kind for kind, _ in first["new_items"]] == ["tool_result"] and first["new_items"][0][1] > 0
+
+
+def test_budget_shown_in_status(tools: Any, tmp_path: Path) -> None:
+    client = Scripted([_r(0, done="ok")])
+    _run(client, tools, tmp_path, context_budget=20000)
+    assert client.calls[0][-1]["content"].endswith("(budget ~20000 tokens)")

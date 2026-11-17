@@ -20,7 +20,7 @@ tools (`write_file`, `str_replace`, `exec_shell`; files are read through file re
 selfctx "make the tests pass"            # prints the final answer
 selfctx --json "make the tests pass"     # {"final", "turns", "items", "log"}
 echo "task" | selfctx
-selfctx --model k3.1-pro --inference-db kimi-coding --max-turns 50 --log-dir runs "task"
+selfctx --model k3.1-pro --inference-db kimi-coding --max-turns 50 --context-budget 20000 --log-dir runs "task"
 ```
 
 Defaults: Kimi K3.1 Pro through the agentknit inference-db entry `kimi-coding`.
@@ -30,8 +30,10 @@ Each request carries the turn schema as `response_format: json_schema` (`--no-sc
 without it); replies are validated anyway, since Kimi does not enforce the schema at decoding.
 
 Each run writes `runs/<timestamp>.jsonl`, one record per turn:
-`turn`, `items_before`, `max_index`, `items_after`, `usage`, `finish_reason`, `reply`, and `error`
-when the reply broke the protocol.
+`turn`, `items_before`, `max_index`, `items_after`, `new_items` (kind and estimated tokens of each
+appended item), `usage`, `finish_reason`, `reply`, and `error` when the reply broke the protocol.
+
+The context budget is soft: it is shown to the model, never enforced.
 
 ```
 jq -c '[.turn, .items_before, .max_index, .items_after]' runs/*.jsonl

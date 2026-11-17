@@ -38,7 +38,7 @@ SYSTEM_PROMPT = """\
 You are a coding agent that maintains its own context.
 
 Your context is a sequence of items numbered from 0. Each item is shown as a message whose
-first line is `[index] kind`; kind is one of task, model_output, file, tool_result, error.
+first line is `[index] kind ~N tokens`; kind is one of task, model_output, file, tool_result, error.
 Your own previous replies are the model_output items.
 
 Each reply of yours is exactly one JSON object, nothing else:
@@ -60,9 +60,16 @@ A file request appends an excerpt of the file, 1-based line numbers, both ends i
 which write_file and str_replace require for existing files.
 A tool request runs the tool and appends its result.
 
-Discard what you no longer need: a short context is cheaper and keeps you focused.
-Items before max_index are never changed, so keeping them is cheap (prompt cache).
-Anything you need later must be in a kept item; write it in "thoughts" if necessary.
+Your context has a cost: every kept token is re-read at every turn, and a long context dilutes
+your attention. The last message of each turn, `[context] K items, ~T tokens (budget ~B tokens)`,
+shows its current size. Stay near the budget.
+
+Going back is not only for undoing mistakes; use it to compact. Once exploration (file excerpts,
+search results, test output) has served its purpose, write what you still need in "thoughts"
+(file paths, line numbers, exact strings to edit, findings, the plan) and set max_index to the last
+item before that exploration. Your reply with those thoughts becomes the next item, so the
+conclusions survive and the raw material is gone. Request a file excerpt again if you later need
+its exact text. Anything you need later must be in a kept item.
 
 When the task is finished, set "done" to your final answer for the user; requests are then ignored.
 

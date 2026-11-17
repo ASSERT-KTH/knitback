@@ -10,7 +10,7 @@ from typing import Any, Protocol
 
 from agentknit import dispatch
 
-from ._items import Item, apply, render
+from ._items import Item, apply, render, tokens
 from ._protocol import FileRequest, ProtocolError, Request, check_args, parse, response_format, system_prompt
 
 _ECHOED_TAGS = re.compile(r"\A\s*(?:\[(?:\d+|context)\] [^\n{]*\n)+")
@@ -117,6 +117,7 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
                     return Result(out.done, items, turn)
                 new = [_cap(_execute(r, tool_dispatch, specs), max_item_chars) for r in out.requests]
                 items = apply(items, out.max_index, Item("model_output", reply), new)
+                record["new_items"] = [[item.kind, tokens(item.content)] for item in new]
             record["items_after"] = len(items)
             if log:
                 log.write(json.dumps(record) + "\n")

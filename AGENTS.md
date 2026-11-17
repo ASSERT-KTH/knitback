@@ -8,8 +8,10 @@ the model is aware of its own context and maintains it itself.
 - The context is a sequence of items, indexed from 0.
 - One item is one file excerpt, one tool result, or one model output
   (its reasoning plus `max_index` and the request list).
-- Every item is shown to the model with its index (e.g. a `[17]` tag),
+- Every item is shown to the model with its index and estimated size (e.g. `[17] file ~850 tokens`),
   so the model knows what to keep.
+- After the last item, a status message that is not an item gives the context size and a soft budget
+  (`[context] 42 items, ~23000 tokens (budget ~20000 tokens)`). Being last, it never breaks the cached prefix.
 - Items are only ever appended or truncated, never edited in place,
   so every turn's prompt shares a prefix with the previous one (prompt-cache friendly).
 - No item is protected: the model may truncate down to and including the task description.

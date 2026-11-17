@@ -20,6 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-turns", type=int, default=50, help="default: %(default)s")
     parser.add_argument("--log-dir", type=Path, default=Path("runs"),
                         help="one JSONL log per run, one record per turn (default: %(default)s)")
+    parser.add_argument("--context-budget", type=int, default=20_000,
+                        help="soft context budget in tokens, shown to the model each turn (default: %(default)s)")
     parser.add_argument("--no-schema", action="store_true",
                         help="do not send the turn schema as response_format (for endpoints without json_schema)")
     parser.add_argument("--json", action="store_true",
@@ -48,7 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     with contextlib.redirect_stdout(sys.stderr):  # tool output streams; stdout is for the answer
         result = run(task, client, schema.get("model", args.model), tool_specs, tool_dispatch,
                      request_params=dict(schema.get("request_params") or {}),
-                     max_turns=args.max_turns, log_path=log, schema=not args.no_schema)
+                     max_turns=args.max_turns, log_path=log, schema=not args.no_schema,
+                     context_budget=args.context_budget)
     if args.json:
         print(json.dumps({"final": result.final, "turns": result.turns,
                           "items": len(result.items), "log": str(log)}))
