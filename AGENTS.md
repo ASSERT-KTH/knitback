@@ -39,3 +39,5 @@ the model alone manages its context.
 The implementation is the `selfctx` package: `_items.py` (items, rendering, truncation),
 `_protocol.py` (system prompt, output parsing), `_loop.py` (the turn loop), `__main__.py` (CLI).
 The model output is plain JSON parsed from the reply; constrained decoding is required after the MVP.
+Kimi K3.1 (kimi-coding) accepts `response_format: json_schema` but does not enforce it at decoding
+(see `probes/kimi-constrained-decoding/`), so `parse` validation stays mandatory with it.

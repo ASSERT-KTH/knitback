@@ -1,0 +1,3 @@
+{"mode": "control_json_object", "valid": "5/5", "lengths": [37, 37, 37, 37, 37]}
+{"mode": "json_schema_strict", "valid": "5/5", "lengths": [37, 37, 37, 37, 37]}
+{"mode": "function_strict", "valid": "5/5", "lengths": [37, 37, 37, 37, 37]}

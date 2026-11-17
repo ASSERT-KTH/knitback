@@ -1,0 +1,6 @@
+{"case": "x73", "mode": "control_json_object", "valid": "5/5", "lengths": [73, 73, 73, 73, 73]}
+{"case": "x73", "mode": "json_schema_strict", "valid": "5/5", "lengths": [73, 73, 73, 73, 73]}
+{"case": "x73", "mode": "function_strict", "valid": "5/5", "lengths": [73, 73, 73, 73, 73]}
+{"case": "ab29c", "mode": "control_json_object", "valid": "1/5", "lengths": [null, 59, null, null, 61]}
+{"case": "ab29c", "mode": "json_schema_strict", "valid": "3/5", "lengths": [59, null, 59, 59, null]}
+{"case": "ab29c", "mode": "function_strict", "valid": "2/5", "lengths": [61, 59, 59, null, 61]}

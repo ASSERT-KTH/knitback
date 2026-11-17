@@ -29,7 +29,7 @@ norecursedirs = ["fixtures"]
 
 [tool.ruff]
 line-length = 110
-extend-exclude = ["tests/fixtures"]
+extend-exclude = ["tests/fixtures", "probes"]
 
 [tool.mypy]
 strict = true

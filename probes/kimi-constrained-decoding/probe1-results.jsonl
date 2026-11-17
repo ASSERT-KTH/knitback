@@ -1,0 +1,14 @@
+{"mode": "control_none", "trial": 0, "kind": "TEXT", "valid_schema": false, "out": "Rain drums on the roof  \nSilver threads stitch sky to earth  \nWet leaves bow and shine"}
+{"mode": "control_none", "trial": 1, "kind": "TEXT", "valid_schema": false, "out": "Rain taps the window\nSoft streets drink the silver sky\nMorning smells of earth"}
+{"mode": "control_none", "trial": 2, "kind": "TEXT", "valid_schema": false, "out": "Soft rain on the roof\nSilver threads stitch the dark sky\nPuddles hold the moon"}
+{"mode": "bogus_response_format", "trial": 0, "kind": "HTTPERR", "valid_schema": false, "out": "HTTPStatusError: 400 Bad Request for url: https://api.kimi.com/coding/v1/chat/completions \u2014 {\"error\":{\"message\":\"response_format.type must be one of 'text', 'js"}
+{"mode": "json_object", "trial": 0, "kind": "TEXT", "valid_schema": false, "out": "{\"haiku\":\"Soft rain on the roof\\nSilver threads mend the gray sky\\nPuddles hold the dusk\"}"}
+{"mode": "json_object", "trial": 1, "kind": "TEXT", "valid_schema": false, "out": "{\"haiku\":\"Rain taps the tin roof\\nSilver threads stitch sky to earth\\nNight drinks the soft song\"}"}
+{"mode": "json_object", "trial": 2, "kind": "TEXT", "valid_schema": false, "out": "{\"haiku\":\"Rain taps the rooftops\\nSilver threads stitch sky to earth\\nPuddles hold the clouds\"}"}
+{"mode": "json_schema_strict", "trial": 0, "kind": "TEXT", "valid_schema": true, "out": "{\"done\":\"Soft rain fills the dusk\\nSilver threads on quiet leaves\\nEarth drinks, then grows still\",\"max_index\":0,\"requests\":[]}"}
+{"mode": "json_schema_strict", "trial": 1, "kind": "TEXT", "valid_schema": true, "out": "{\"done\":\"Raindrops whisper down\\nSoft streets drink the silver sky\\nDawn wakes in puddles\",\"max_index\":0,\"requests\":[]}"}
+{"mode": "json_schema_strict", "trial": 2, "kind": "TEXT", "valid_schema": true, "out": "{\"done\":\"Rain on the rooftops\\nWhispers through the waking leaves\\nPuddles hold the sky\",\"max_index\":0,\"requests\":[]}"}
+{"mode": "forced_function_strict", "trial": 0, "kind": "TOOL", "valid_schema": true, "out": "{\"done\": \"Rain taps the dark roof\\nSoft rivers thread the window\\nDawn drinks the last drops\", \"max_index\": 0, \"requests\": []}"}
+{"mode": "forced_function_strict", "trial": 1, "kind": "TOOL", "valid_schema": true, "out": "{\"max_index\": 0, \"requests\": [], \"done\": null}"}
+{"mode": "forced_function_strict", "trial": 2, "kind": "TOOL", "valid_schema": true, "out": "{\"done\": null, \"max_index\": 0, \"requests\": []}"}
+{"mode": "custom_grammar_tool", "trial": 0, "kind": "HTTPERR", "valid_schema": false, "out": "HTTPStatusError: 400 Bad Request for url: https://api.kimi.com/coding/v1/chat/completions \u2014 {\"error\":{\"message\":\"unknown tool type: custom, currently only funct"}
