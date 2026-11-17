@@ -35,3 +35,7 @@ The MVP is built on agentknit (`~/workspace/prototypes/agentknit`),
 which provides LLM endpoint access and tool execution.
 agentknit runs in bare mode (no compaction, no token or time awareness):
 the model alone manages its context.
+
+The implementation is the `selfctx` package: `_items.py` (items, rendering, truncation),
+`_protocol.py` (system prompt, output parsing), `_loop.py` (the turn loop), `__main__.py` (CLI).
+The model output is plain JSON parsed from the reply; constrained decoding is required after the MVP.
