@@ -8,3 +8,6 @@ __pycache__/
 *.egg-info/
 runs/
 plan-*.md
+bench/results/*/testbed/
+bench/results/*/eval/logs/
+bench/validate/logs/
