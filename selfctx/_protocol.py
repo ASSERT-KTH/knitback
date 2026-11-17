@@ -136,26 +136,48 @@ def parse(reply: str, n_items: int, tools: set[str]) -> Output:
                   [_request(r, tools) for r in raw_requests], done)
 
 
-def turn_schema(tools: set[str]) -> dict[str, Any]:
+def _tool_branch(spec: dict[str, Any]) -> dict[str, Any]:
+    """Schema of one tool request: the tool name as a constant, its own parameters, nothing else."""
+    params = spec["function"]["parameters"]
+    args = {**params, "additionalProperties": False}
+    return {"type": "object", "additionalProperties": False, "required": ["tool", "args"],
+            "properties": {"tool": {"type": "string", "const": spec["function"]["name"]}, "args": args}}
+
+
+def turn_schema(tool_specs: list[dict[str, Any]]) -> dict[str, Any]:
     """JSON schema of one model output, for `response_format: json_schema`.
 
-    Endpoints may only follow it as an instruction (Kimi does), so `parse` still validates.
+    Endpoints may only follow it as an instruction (Kimi does), so `parse` and `check_args` still validate.
     """
     file_request = {"type": "object", "additionalProperties": False, "required": ["file", "lines"],
                     "properties": {"file": {"type": "string"},
                                    "lines": {"type": ["array", "null"], "minItems": 2, "maxItems": 2,
                                              "items": {"type": "integer", "minimum": 1}}}}
-    tool_request = {"type": "object", "additionalProperties": False, "required": ["tool", "args"],
-                    "properties": {"tool": {"type": "string", "enum": sorted(tools)},
-                                   "args": {"type": "object"}}}
     return {"type": "object", "additionalProperties": False,
             "required": ["thoughts", "max_index", "requests", "done"],
             "properties": {"thoughts": {"type": "string"},
                            "max_index": {"type": "integer", "minimum": -1},
-                           "requests": {"type": "array", "items": {"anyOf": [file_request, tool_request]}},
+                           "requests": {"type": "array", "items": {
+                               "anyOf": [file_request] + [_tool_branch(t) for t in tool_specs]}},
                            "done": {"type": ["string", "null"]}}}
 
 
-def response_format(tools: set[str]) -> dict[str, Any]:
+def response_format(tool_specs: list[dict[str, Any]]) -> dict[str, Any]:
     """The `response_format` request field carrying `turn_schema`; constant across turns."""
-    return {"type": "json_schema", "json_schema": {"name": "turn", "strict": True, "schema": turn_schema(tools)}}
+    return {"type": "json_schema",
+            "json_schema": {"name": "turn", "strict": True, "schema": turn_schema(tool_specs)}}
+
+
+def check_args(spec: dict[str, Any], args: dict[str, Any]) -> str | None:
+    """Why `args` do not fit the tool's parameters (unknown or missing keys), or None if they do."""
+    params = spec["function"]["parameters"]
+    known, required = set(params.get("properties", {})), set(params.get("required", []))
+    problems = []
+    if unknown := sorted(set(args) - known):
+        problems.append(f"unknown argument(s) {', '.join(unknown)}")
+    if missing := sorted(required - set(args)):
+        problems.append(f"missing argument(s) {', '.join(missing)}")
+    if not problems:
+        return None
+    return f"{'; '.join(problems)}. {spec['function']['name']} takes: {', '.join(sorted(known))}" + (
+        f" (required: {', '.join(sorted(required))})" if required else "")

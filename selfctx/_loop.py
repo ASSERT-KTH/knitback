@@ -11,7 +11,7 @@ from typing import Any, Protocol
 from agentknit import dispatch
 
 from ._items import Item, apply, render
-from ._protocol import FileRequest, ProtocolError, Request, parse, response_format, system_prompt
+from ._protocol import FileRequest, ProtocolError, Request, check_args, parse, response_format, system_prompt
 
 _ECHOED_TAGS = re.compile(r"\A\s*(?:\[(?:\d+|context)\] [^\n{]*\n)+")
 _ENVELOPE = re.compile(r"\A<[0-9a-f]{8}[^>]*>\n?(.*?)</[0-9a-f]{8}>\s*\Z", re.DOTALL)
@@ -56,11 +56,13 @@ def _read(req: FileRequest, tool_dispatch: dict[str, Any]) -> Item:
     return Item("file", f"{req.path} lines {first}-{last}\n{numbered}")
 
 
-def _execute(req: Request, tool_dispatch: dict[str, Any]) -> Item:
+def _execute(req: Request, tool_dispatch: dict[str, Any], specs: dict[str, dict[str, Any]]) -> Item:
     if isinstance(req, FileRequest):
         return _read(req, tool_dispatch)
-    text, meta = dispatch(req.tool, req.args, tool_dispatch)
     header = f"{req.tool} {json.dumps(req.args)[:200]}"
+    if problem := check_args(specs[req.tool], req.args):
+        return Item("error", f"{header}\nnot run: {problem}")
+    text, meta = dispatch(req.tool, req.args, tool_dispatch)
     return Item("error" if meta.get("ok") is False else "tool_result", f"{header}\n{text}")
 
 
@@ -82,12 +84,13 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
 
     `schema` sends the turn schema as `response_format` (the endpoint must accept `json_schema`).
     """
-    tools = {t["function"]["name"] for t in tool_specs}
+    specs = {t["function"]["name"]: t for t in tool_specs}
+    tools = set(specs)
     system = system_prompt(tool_specs)
     items = [Item("task", task)]
     params = dict(request_params or {})
     if schema:
-        params["extra_body"] = {**params.get("extra_body", {}), "response_format": response_format(tools)}
+        params["extra_body"] = {**params.get("extra_body", {}), "response_format": response_format(tool_specs)}
     log = log_path.open("a") if log_path else None
     try:
         for turn in range(1, max_turns + 1):
@@ -112,7 +115,7 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
                     if log:
                         log.write(json.dumps(record) + "\n")
                     return Result(out.done, items, turn)
-                new = [_cap(_execute(r, tool_dispatch), max_item_chars) for r in out.requests]
+                new = [_cap(_execute(r, tool_dispatch, specs), max_item_chars) for r in out.requests]
                 items = apply(items, out.max_index, Item("model_output", reply), new)
             record["items_after"] = len(items)
             if log:

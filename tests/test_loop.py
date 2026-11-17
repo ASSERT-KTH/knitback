@@ -148,3 +148,11 @@ def test_long_tool_output_is_truncated_head_and_tail(tools: Any, tmp_path: Path)
     content = client.calls[1][3]["content"]
     assert "truncated by the host" in content and "BBBB" not in content
     assert len(content) < 600
+
+
+def test_extra_tool_key_in_args_is_not_run_and_names_expected_params(tools: Any, tmp_path: Path) -> None:
+    client = Scripted([_r(0, [{"tool": "exec_shell", "args": {"command": "echo hi", "tool": "exec_shell"}}]),
+                       _r(0, done="ok")])
+    _run(client, tools, tmp_path)
+    content = client.calls[1][3]["content"]
+    assert content.startswith("[2] error") and "unknown argument(s) tool" in content and "command" in content

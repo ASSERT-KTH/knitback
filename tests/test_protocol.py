@@ -4,7 +4,15 @@ import json
 
 import pytest
 
-from selfctx._protocol import FileRequest, ProtocolError, ToolRequest, parse, system_prompt, turn_schema
+from selfctx._protocol import (
+    FileRequest,
+    ProtocolError,
+    ToolRequest,
+    check_args,
+    parse,
+    system_prompt,
+    turn_schema,
+)
 
 TOOLS = {"exec_shell", "write_file"}
 
@@ -61,11 +69,24 @@ def test_system_prompt_lists_tools() -> None:
     assert '"name": "exec_shell"' in system_prompt(spec)
 
 
-def test_turn_schema_lists_tools_and_requires_all_fields() -> None:
-    js = turn_schema({"write_file", "exec_shell"})
+SPECS = [{"type": "function", "function": {"name": "exec_shell", "description": "run", "parameters": {
+    "type": "object", "properties": {"command": {"type": "string"}}, "required": ["command"]}}}]
+
+
+def test_turn_schema_has_one_branch_per_tool_with_its_own_args() -> None:
+    js = turn_schema(SPECS)
     assert js["required"] == ["thoughts", "max_index", "requests", "done"]
-    tool = js["properties"]["requests"]["items"]["anyOf"][1]
-    assert tool["properties"]["tool"]["enum"] == ["exec_shell", "write_file"]
+    branch = js["properties"]["requests"]["items"]["anyOf"][1]
+    assert branch["properties"]["tool"] == {"type": "string", "const": "exec_shell"}
+    assert branch["properties"]["args"]["additionalProperties"] is False
+    assert branch["properties"]["args"]["required"] == ["command"]
+
+
+def test_check_args() -> None:
+    assert check_args(SPECS[0], {"command": "ls"}) is None
+    assert check_args(SPECS[0], {"command": "ls", "tool": "exec_shell"}) == (
+        "unknown argument(s) tool. exec_shell takes: command (required: command)")
+    assert "missing argument(s) command" in (check_args(SPECS[0], {}) or "")
 
 
 def test_schema_valid_reply_parses() -> None:
