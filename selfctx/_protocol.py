@@ -1,0 +1,136 @@
+"""The turn protocol: system prompt and parsing of the model output."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from typing import Any
+
+
+class ProtocolError(ValueError):
+    """The model output does not follow the protocol; the message is shown to the model."""
+
+
+@dataclass(frozen=True)
+class FileRequest:
+    path: str
+    lines: tuple[int, int] | None  # 1-based, inclusive; None = agentknit's default read
+
+
+@dataclass(frozen=True)
+class ToolRequest:
+    tool: str
+    args: dict[str, Any] = field(default_factory=dict)
+
+
+Request = FileRequest | ToolRequest
+
+
+@dataclass(frozen=True)
+class Output:
+    thoughts: str
+    max_index: int
+    requests: list[Request]
+    done: str | None
+
+
+SYSTEM_PROMPT = """\
+You are a coding agent that maintains its own context.
+
+Your context is a sequence of items numbered from 0. Each item is shown as a message whose
+first line is `[index] kind`; kind is one of task, model_output, file, tool_result, error.
+Your own previous replies are the model_output items.
+
+Each reply of yours is exactly one JSON object, nothing else:
+{{"thoughts": "<short reasoning>",
+ "max_index": <int>,
+ "requests": [ {{"file": "<path>", "lines": [<first>, <last>]}},
+               {{"tool": "<name>", "args": {{...}}}} ],
+ "done": null}}
+
+At the next turn your context is:
+1. items 0..max_index (inclusive); every later item is discarded for good.
+   Set max_index to the last item you still need, or the highest index to keep everything,
+   or -1 to drop everything (including the task).
+2. this reply of yours, as one model_output item;
+3. one new item per request, in the order you list them. You control this order.
+
+A file request appends an excerpt of the file, 1-based line numbers, both ends included
+("lines" may be omitted to get the first 100 lines). It also counts as reading the file,
+which write_file and str_replace require for existing files.
+A tool request runs the tool and appends its result.
+
+Discard what you no longer need: a short context is cheaper and keeps you focused.
+Items before max_index are never changed, so keeping them is cheap (prompt cache).
+Anything you need later must be in a kept item; write it in "thoughts" if necessary.
+
+When the task is finished, set "done" to your final answer for the user; requests are then ignored.
+
+Tools:
+{tools}
+"""
+
+
+def system_prompt(tool_specs: list[dict[str, Any]]) -> str:
+    """Constant across turns, so it never breaks the prompt-cache prefix."""
+    tools = "\n".join(
+        json.dumps({"name": t["function"]["name"], "description": t["function"]["description"],
+                    "parameters": t["function"]["parameters"]})
+        for t in tool_specs)
+    return SYSTEM_PROMPT.format(tools=tools)
+
+
+def _json_object(reply: str) -> dict[str, Any]:
+    start, end = reply.find("{"), reply.rfind("}")
+    if start < 0 or end < start:
+        raise ProtocolError("no JSON object found in your reply")
+    try:
+        data = json.loads(reply[start:end + 1])
+    except json.JSONDecodeError as exc:
+        raise ProtocolError(f"invalid JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ProtocolError("the reply must be a JSON object")
+    return data
+
+
+def _request(raw: Any, tools: set[str]) -> Request:
+    if not isinstance(raw, dict):
+        raise ProtocolError(f"request {raw!r} is not an object")
+    if "file" in raw:
+        path, lines = raw["file"], raw.get("lines")
+        if not isinstance(path, str):
+            raise ProtocolError(f"file request {raw!r}: file must be a string")
+        if lines is None:
+            return FileRequest(path, None)
+        if (not isinstance(lines, list) or len(lines) != 2
+                or not all(isinstance(n, int) and not isinstance(n, bool) for n in lines)
+                or not 1 <= lines[0] <= lines[1]):
+            raise ProtocolError(f"file request {raw!r}: lines must be [first, last] with 1 <= first <= last")
+        return FileRequest(path, (lines[0], lines[1]))
+    if "tool" in raw:
+        name, args = raw["tool"], raw.get("args", {})
+        if name not in tools:
+            raise ProtocolError(f"unknown tool {name!r}; available: {', '.join(sorted(tools))}")
+        if not isinstance(args, dict):
+            raise ProtocolError(f"tool request {raw!r}: args must be an object")
+        return ToolRequest(name, args)
+    raise ProtocolError(f"request {raw!r} has neither 'file' nor 'tool'")
+
+
+def parse(reply: str, n_items: int, tools: set[str]) -> Output:
+    """Parse and validate a reply, given the current number of items and the tool names."""
+    data = _json_object(reply)
+    max_index = data.get("max_index")
+    if not isinstance(max_index, int) or isinstance(max_index, bool):
+        raise ProtocolError("max_index must be an integer")
+    if not -1 <= max_index <= n_items - 1:
+        raise ProtocolError(f"max_index {max_index} is out of range [-1, {n_items - 1}]")
+    raw_requests = data.get("requests", [])
+    if not isinstance(raw_requests, list):
+        raise ProtocolError("requests must be a list")
+    done = data.get("done")
+    if done is not None and not isinstance(done, str):
+        raise ProtocolError("done must be null or a string")
+    thoughts = data.get("thoughts", "")
+    return Output(thoughts if isinstance(thoughts, str) else json.dumps(thoughts), max_index,
+                  [_request(r, tools) for r in raw_requests], done)
