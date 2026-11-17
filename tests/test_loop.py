@@ -32,7 +32,8 @@ def _r(max_index: int, requests: list[dict[str, Any]] | None = None, done: str |
 
 
 def _heads(messages: list[dict[str, str]]) -> list[str]:
-    return [m["content"].split("\n", 1)[0] for m in messages[1:]]
+    """Item headers without the size suffix; the last message is the status, not an item."""
+    return [m["content"].split("\n", 1)[0].split(" ~")[0] for m in messages[1:-1]]
 
 
 @pytest.fixture
@@ -63,7 +64,8 @@ def test_kept_prefix_is_byte_identical(tools: Any, tmp_path: Path) -> None:
         _r(2, [{"tool": "exec_shell", "args": {"command": "echo b"}}]),
         _r(1, done="ok")])
     _run(client, tools, tmp_path)
-    assert client.calls[2][:4] == client.calls[1]
+    assert client.calls[2][:4] == client.calls[1][:4]
+    assert client.calls[1][4]['content'].startswith('[context] 3 items')
 
 
 def test_requests_appended_in_listed_order(tools: Any, tmp_path: Path) -> None:
@@ -74,7 +76,7 @@ def test_requests_appended_in_listed_order(tools: Any, tmp_path: Path) -> None:
                {"tool": "exec_shell", "args": {"command": "echo third"}}]),
         _r(0, done="ok")])
     _run(client, tools, tmp_path)
-    contents = [m["content"] for m in client.calls[1][3:]]
+    contents = [m["content"] for m in client.calls[1][3:-1]]
     assert "first" in contents[0] and "third" in contents[2]
     assert contents[1].endswith("f.txt lines 2-3\n2\tl2\n3\tl3\n")
 
@@ -88,7 +90,7 @@ def test_file_request_allows_edit(tools: Any, tmp_path: Path) -> None:
         _r(0, done="ok")])
     _run(client, tools, tmp_path)
     assert f.read_text() == "x = 2\n"
-    assert client.calls[2][-1]["content"].split("\n", 1)[0] == "[4] tool_result"
+    assert client.calls[2][-2]["content"].split("\n", 1)[0].startswith("[4] tool_result ~")
 
 
 def test_invalid_max_index_becomes_error_item(tools: Any, tmp_path: Path) -> None:
@@ -118,9 +120,10 @@ def test_log_has_one_record_per_turn(tools: Any, tmp_path: Path) -> None:
 
 
 def test_echoed_tag_is_stripped_from_stored_output(tools: Any, tmp_path: Path) -> None:
-    client = Scripted(["[1] model_output\n[1] model_output\n" + _r(0), _r(1, done="ok")])
+    client = Scripted(["[1] model_output ~9 tokens\n[1] model_output\n[context] 1 items\n" + _r(0),
+                       _r(1, done="ok")])
     _run(client, tools, tmp_path)
-    assert client.calls[1][2]["content"] == "[1] model_output\n" + _r(0)
+    assert client.calls[1][2]["content"].split("\n", 1)[1] == _r(0)
 
 
 def test_turn_schema_sent_as_response_format(tools: Any, tmp_path: Path) -> None:

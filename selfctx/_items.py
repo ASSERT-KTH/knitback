@@ -16,16 +16,32 @@ class Item:
     content: str
 
 
-def render(items: list[Item], system: str) -> list[dict[str, str]]:
-    """Chat messages for `items`: one message per item, tagged `[index] kind`.
+def tokens(text: str) -> int:
+    """Rough token estimate (4 characters per token): a relative signal, not a tokenizer."""
+    return (len(text) + 3) // 4
+
+
+def header(index: int, item: Item) -> str:
+    return f"[{index}] {item.kind} ~{tokens(item.content)} tokens"
+
+
+def render(items: list[Item], system: str, budget: int | None = None) -> list[dict[str, str]]:
+    """Chat messages for `items`: one message per item, headed `[index] kind ~N tokens`.
 
     One message per item keeps every kept prefix byte-identical across turns,
     so truncation never invalidates the provider's prompt cache before the cut.
+    A final status message (not an item) gives the context size; being last,
+    it is the only part that changes from turn to turn.
     """
     messages = [{"role": "system", "content": system}]
     for index, item in enumerate(items):
         role = "assistant" if item.kind == "model_output" else "user"
-        messages.append({"role": role, "content": f"[{index}] {item.kind}\n{item.content}"})
+        messages.append({"role": role, "content": f"{header(index, item)}\n{item.content}"})
+    total = sum(tokens(item.content) for item in items)
+    status = f"[context] {len(items)} items, ~{total} tokens"
+    if budget is not None:
+        status += f" (budget ~{budget} tokens)"
+    messages.append({"role": "user", "content": status})
     return messages
 
 

@@ -13,7 +13,7 @@ from agentknit import dispatch
 from ._items import Item, apply, render
 from ._protocol import FileRequest, ProtocolError, Request, parse, response_format, system_prompt
 
-_ECHOED_TAGS = re.compile(r"\A\s*(?:\[\d+\] \w+\s*\n)+")
+_ECHOED_TAGS = re.compile(r"\A\s*(?:\[(?:\d+|context)\] [^\n{]*\n)+")
 _ENVELOPE = re.compile(r"\A<[0-9a-f]{8}[^>]*>\n?(.*?)</[0-9a-f]{8}>\s*\Z", re.DOTALL)
 
 
@@ -77,7 +77,7 @@ def _usage(response: Any) -> dict[str, Any] | None:
 def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
         tool_dispatch: dict[str, Any], *, request_params: dict[str, Any] | None = None,
         max_turns: int = 50, log_path: Path | None = None, schema: bool = True,
-        max_item_chars: int = 30_000) -> Result:
+        max_item_chars: int = 30_000, context_budget: int | None = None) -> Result:
     """Run `task` until the model sets `done` or `max_turns` is reached.
 
     `schema` sends the turn schema as `response_format` (the endpoint must accept `json_schema`).
@@ -92,7 +92,7 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
     try:
         for turn in range(1, max_turns + 1):
             response = client.chat.completions.create(
-                model=model, messages=render(items, system), **params)
+                model=model, messages=render(items, system, context_budget), **params)
             # Models imitate the `[i] kind` header of past outputs; the host adds it, so drop the echo.
             reply = _ECHOED_TAGS.sub("", response.choices[0].message.content or "")
             record: dict[str, Any] = {"turn": turn, "items_before": len(items),
