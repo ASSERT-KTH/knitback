@@ -56,7 +56,7 @@ At the next turn your context is:
 3. one new item per request, in the order you list them. You control this order.
 
 A file request appends an excerpt of the file, 1-based line numbers, both ends included
-("lines" may be omitted to get the first 100 lines). It also counts as reading the file,
+("lines": null gives the first 100 lines). It also counts as reading the file,
 which write_file and str_replace require for existing files.
 A tool request runs the tool and appends its result.
 
@@ -134,3 +134,28 @@ def parse(reply: str, n_items: int, tools: set[str]) -> Output:
     thoughts = data.get("thoughts", "")
     return Output(thoughts if isinstance(thoughts, str) else json.dumps(thoughts), max_index,
                   [_request(r, tools) for r in raw_requests], done)
+
+
+def turn_schema(tools: set[str]) -> dict[str, Any]:
+    """JSON schema of one model output, for `response_format: json_schema`.
+
+    Endpoints may only follow it as an instruction (Kimi does), so `parse` still validates.
+    """
+    file_request = {"type": "object", "additionalProperties": False, "required": ["file", "lines"],
+                    "properties": {"file": {"type": "string"},
+                                   "lines": {"type": ["array", "null"], "minItems": 2, "maxItems": 2,
+                                             "items": {"type": "integer", "minimum": 1}}}}
+    tool_request = {"type": "object", "additionalProperties": False, "required": ["tool", "args"],
+                    "properties": {"tool": {"type": "string", "enum": sorted(tools)},
+                                   "args": {"type": "object"}}}
+    return {"type": "object", "additionalProperties": False,
+            "required": ["thoughts", "max_index", "requests", "done"],
+            "properties": {"thoughts": {"type": "string"},
+                           "max_index": {"type": "integer", "minimum": -1},
+                           "requests": {"type": "array", "items": {"anyOf": [file_request, tool_request]}},
+                           "done": {"type": ["string", "null"]}}}
+
+
+def response_format(tools: set[str]) -> dict[str, Any]:
+    """The `response_format` request field carrying `turn_schema`; constant across turns."""
+    return {"type": "json_schema", "json_schema": {"name": "turn", "strict": True, "schema": turn_schema(tools)}}

@@ -26,6 +26,8 @@ selfctx --model k3.1-pro --inference-db kimi-coding --max-turns 50 --log-dir run
 Defaults: Kimi K3.1 Pro through the agentknit inference-db entry `kimi-coding`.
 Exit code 0 when the model sets `done`, 1 after `--max-turns` without an answer, 2 on an empty task.
 Tool output is streamed to stderr; stdout carries only the answer.
+Each request carries the turn schema as `response_format: json_schema` (`--no-schema` for endpoints
+without it); replies are validated anyway, since Kimi does not enforce the schema at decoding.
 
 Each run writes `runs/<timestamp>.jsonl`, one record per turn:
 `turn`, `items_before`, `max_index`, `items_after`, `usage`, `finish_reason`, `reply`, and `error`

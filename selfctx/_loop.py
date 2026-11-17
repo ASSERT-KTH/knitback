@@ -11,7 +11,7 @@ from typing import Any, Protocol
 from agentknit import dispatch
 
 from ._items import Item, apply, render
-from ._protocol import FileRequest, ProtocolError, Request, parse, system_prompt
+from ._protocol import FileRequest, ProtocolError, Request, parse, response_format, system_prompt
 
 _ECHOED_TAGS = re.compile(r"\A\s*(?:\[\d+\] \w+\s*\n)+")
 _ENVELOPE = re.compile(r"\A<[0-9a-f]{8}[^>]*>\n?(.*?)</[0-9a-f]{8}>\s*\Z", re.DOTALL)
@@ -66,16 +66,22 @@ def _usage(response: Any) -> dict[str, Any] | None:
 
 def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
         tool_dispatch: dict[str, Any], *, request_params: dict[str, Any] | None = None,
-        max_turns: int = 50, log_path: Path | None = None) -> Result:
-    """Run `task` until the model sets `done` or `max_turns` is reached."""
+        max_turns: int = 50, log_path: Path | None = None, schema: bool = True) -> Result:
+    """Run `task` until the model sets `done` or `max_turns` is reached.
+
+    `schema` sends the turn schema as `response_format` (the endpoint must accept `json_schema`).
+    """
     tools = {t["function"]["name"] for t in tool_specs}
     system = system_prompt(tool_specs)
     items = [Item("task", task)]
+    params = dict(request_params or {})
+    if schema:
+        params["extra_body"] = {**params.get("extra_body", {}), "response_format": response_format(tools)}
     log = log_path.open("a") if log_path else None
     try:
         for turn in range(1, max_turns + 1):
             response = client.chat.completions.create(
-                model=model, messages=render(items, system), **(request_params or {}))
+                model=model, messages=render(items, system), **params)
             # Models imitate the `[i] kind` header of past outputs; the host adds it, so drop the echo.
             reply = _ECHOED_TAGS.sub("", response.choices[0].message.content or "")
             record: dict[str, Any] = {"turn": turn, "items_before": len(items),

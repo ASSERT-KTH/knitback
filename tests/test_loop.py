@@ -17,10 +17,12 @@ class Scripted:
     def __init__(self, replies: list[str]) -> None:
         self.replies = list(replies)
         self.calls: list[list[dict[str, str]]] = []
+        self.kwargs: list[dict[str, Any]] = []
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 
     def _create(self, model: str, messages: list[dict[str, str]], **kw: Any) -> Any:
         self.calls.append(messages)
+        self.kwargs.append(kw)
         msg = SimpleNamespace(content=self.replies.pop(0))
         return SimpleNamespace(choices=[SimpleNamespace(message=msg)], usage=None)
 
@@ -119,3 +121,18 @@ def test_echoed_tag_is_stripped_from_stored_output(tools: Any, tmp_path: Path) -
     client = Scripted(["[1] model_output\n[1] model_output\n" + _r(0), _r(1, done="ok")])
     _run(client, tools, tmp_path)
     assert client.calls[1][2]["content"] == "[1] model_output\n" + _r(0)
+
+
+def test_turn_schema_sent_as_response_format(tools: Any, tmp_path: Path) -> None:
+    client = Scripted([_r(0, done="ok")])
+    _run(client, tools, tmp_path, request_params={"temperature": 1})
+    kw = client.kwargs[0]
+    assert kw["temperature"] == 1
+    fmt = kw["extra_body"]["response_format"]
+    assert fmt["type"] == "json_schema" and fmt["json_schema"]["strict"] is True
+
+
+def test_no_schema_sends_no_response_format(tools: Any, tmp_path: Path) -> None:
+    client = Scripted([_r(0, done="ok")])
+    _run(client, tools, tmp_path, schema=False)
+    assert "extra_body" not in client.kwargs[0]

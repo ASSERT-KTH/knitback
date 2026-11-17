@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from selfctx._protocol import FileRequest, ProtocolError, ToolRequest, parse, system_prompt
+from selfctx._protocol import FileRequest, ProtocolError, ToolRequest, parse, system_prompt, turn_schema
 
 TOOLS = {"exec_shell", "write_file"}
 
@@ -59,3 +59,16 @@ def test_system_prompt_lists_tools() -> None:
     spec = [{"type": "function", "function": {"name": "exec_shell", "description": "run",
                                               "parameters": {"type": "object"}}}]
     assert '"name": "exec_shell"' in system_prompt(spec)
+
+
+def test_turn_schema_lists_tools_and_requires_all_fields() -> None:
+    js = turn_schema({"write_file", "exec_shell"})
+    assert js["required"] == ["thoughts", "max_index", "requests", "done"]
+    tool = js["properties"]["requests"]["items"]["anyOf"][1]
+    assert tool["properties"]["tool"]["enum"] == ["exec_shell", "write_file"]
+
+
+def test_schema_valid_reply_parses() -> None:
+    reply = json.dumps({"thoughts": "", "max_index": 0, "done": None,
+                        "requests": [{"file": "a", "lines": None}, {"tool": "exec_shell", "args": {}}]})
+    assert parse(reply, 1, TOOLS).requests == [FileRequest("a", None), ToolRequest("exec_shell", {})]
