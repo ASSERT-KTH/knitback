@@ -31,6 +31,16 @@ class Result:
     turns: int
 
 
+def _cap(item: Item, limit: int) -> Item:
+    """Keep head and tail of an over-long item, so one tool output cannot overflow the context window."""
+    if len(item.content) <= limit:
+        return item
+    half = limit // 2
+    dropped = len(item.content) - 2 * half
+    note = f"\n[... {dropped} characters truncated by the host; narrow the command (grep, head, tail) ...]\n"
+    return Item(item.kind, item.content[:half] + note + item.content[-half:])
+
+
 def _read(req: FileRequest, tool_dispatch: dict[str, Any]) -> Item:
     args: dict[str, Any] = {"path": req.path}
     if req.lines:
@@ -66,7 +76,8 @@ def _usage(response: Any) -> dict[str, Any] | None:
 
 def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
         tool_dispatch: dict[str, Any], *, request_params: dict[str, Any] | None = None,
-        max_turns: int = 50, log_path: Path | None = None, schema: bool = True) -> Result:
+        max_turns: int = 50, log_path: Path | None = None, schema: bool = True,
+        max_item_chars: int = 30_000) -> Result:
     """Run `task` until the model sets `done` or `max_turns` is reached.
 
     `schema` sends the turn schema as `response_format` (the endpoint must accept `json_schema`).
@@ -101,7 +112,7 @@ def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
                     if log:
                         log.write(json.dumps(record) + "\n")
                     return Result(out.done, items, turn)
-                new = [_execute(r, tool_dispatch) for r in out.requests]
+                new = [_cap(_execute(r, tool_dispatch), max_item_chars) for r in out.requests]
                 items = apply(items, out.max_index, Item("model_output", reply), new)
             record["items_after"] = len(items)
             if log:

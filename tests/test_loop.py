@@ -136,3 +136,12 @@ def test_no_schema_sends_no_response_format(tools: Any, tmp_path: Path) -> None:
     client = Scripted([_r(0, done="ok")])
     _run(client, tools, tmp_path, schema=False)
     assert "extra_body" not in client.kwargs[0]
+
+
+def test_long_tool_output_is_truncated_head_and_tail(tools: Any, tmp_path: Path) -> None:
+    cmd = "python3 -c \"print('A' * 500 + 'B' * 500 + 'C' * 500)\""
+    client = Scripted([_r(0, [{"tool": "exec_shell", "args": {"command": cmd}}]), _r(0, done="ok")])
+    _run(client, tools, tmp_path, max_item_chars=400)
+    content = client.calls[1][3]["content"]
+    assert "truncated by the host" in content and "BBBB" not in content
+    assert len(content) < 600
