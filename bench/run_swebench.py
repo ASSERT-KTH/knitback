@@ -7,7 +7,8 @@ evaluate it with `swebench.harness.run_evaluation` (bench/.venv), then remove co
 
 Usage (from the repo root, with the selfctx venv):
     .venv/bin/python bench/run_swebench.py [INSTANCE_ID ...] [--max-turns 100] [--keep-image]
-Outputs: bench/results/<instance_id>/{run.jsonl, patch.diff, result.json, eval/}
+        [--out bench/results] [--context-budget TOKENS]
+Outputs: <out>/<instance_id>/{run.jsonl, patch.diff, result.json, eval/}
 """
 
 from __future__ import annotations
@@ -93,9 +94,10 @@ def stats(log: Path) -> dict[str, Any]:
             "peak_prompt_tokens": max(prompts, default=None), "total_prompt_tokens": sum(prompts)}
 
 
-def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool) -> dict[str, Any]:
+def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool, results: Path,
+                 context_budget: int | None) -> dict[str, Any]:
     iid, image = task["instance_id"], image_of(task["instance_id"])
-    out = RESULTS / iid
+    out = results / iid
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -124,7 +126,7 @@ def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool) -> dict
     try:
         result = run(PROMPT.format(**task), agentknit.create_client(schema), schema.get("model", "k3.1-pro"),
                      tool_specs, tool_dispatch, request_params=dict(schema.get("request_params") or {}),
-                     max_turns=max_turns, log_path=out / "run.jsonl")
+                     max_turns=max_turns, log_path=out / "run.jsonl", context_budget=context_budget)
         final, crash = result.final, None
     except Exception as exc:  # noqa: BLE001 - a crashed run is a data point, not a harness failure
         final, crash = None, f"{type(exc).__name__}: {exc}"[:2000]
@@ -168,6 +170,9 @@ def main() -> int:
     parser.add_argument("instance_ids", nargs="*", help="default: every task in tasks.json")
     parser.add_argument("--max-turns", type=int, default=100)
     parser.add_argument("--keep-image", action="store_true")
+    parser.add_argument("--out", type=Path, default=RESULTS, help="results directory (default: bench/results)")
+    parser.add_argument("--context-budget", type=int, default=None,
+                        help="soft context budget shown to the model (default: none)")
     args = parser.parse_args()
     tasks = json.loads((BENCH / "tasks.json").read_text())
     if args.instance_ids:
@@ -175,7 +180,7 @@ def main() -> int:
     for task in tasks:
         # streamed tool output must not mix with the JSON lines on stdout
         with contextlib.redirect_stdout(sys.stderr):
-            summary = run_instance(task, args.max_turns, args.keep_image)
+            summary = run_instance(task, args.max_turns, args.keep_image, args.out.resolve(), args.context_budget)
         print(json.dumps({k: summary.get(k) for k in ("instance_id", "resolved", "turns", "went_back_turns",
                                                        "protocol_errors", "crash")}), flush=True)
     return 0
