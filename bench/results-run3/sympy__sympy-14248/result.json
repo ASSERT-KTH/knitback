@@ -1,0 +1,26 @@
+{
+ "instance_id": "sympy__sympy-14248",
+ "resolved": false,
+ "final": "Updated the str, pretty, and LaTeX printers for MatAdd to render negative matrix terms with subtraction signs instead of explicit -1 coefficients, including correct parenthesization of subtracted nested matrix sums. Verified the reported expression and related scalar/nested cases.",
+ "crash": null,
+ "duration_s": 25838,
+ "patch_lines": 110,
+ "turns": 37,
+ "went_back_turns": [
+  6,
+  7,
+  10,
+  15,
+  23,
+  25,
+  26,
+  31,
+  35,
+  36,
+  37
+ ],
+ "protocol_errors": 0,
+ "peak_items": 38,
+ "peak_prompt_tokens": 20686,
+ "total_prompt_tokens": 439047
+}

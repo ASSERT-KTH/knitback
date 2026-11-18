@@ -1,0 +1,21 @@
+{
+ "instance_id": "sphinx-doc__sphinx-9461",
+ "resolved": false,
+ "final": null,
+ "crash": "ConnectError: [Errno 101] Network is unreachable",
+ "duration_s": 801,
+ "patch_lines": 45,
+ "turns": 21,
+ "went_back_turns": [
+  6,
+  10,
+  12,
+  15,
+  16,
+  21
+ ],
+ "protocol_errors": 0,
+ "peak_items": 24,
+ "peak_prompt_tokens": 25935,
+ "total_prompt_tokens": 233533
+}

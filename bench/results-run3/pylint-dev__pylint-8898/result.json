@@ -1,0 +1,32 @@
+{
+ "instance_id": "pylint-dev__pylint-8898",
+ "resolved": false,
+ "final": "Updated `regexp_csv` option parsing to preserve commas inside regex groups, character classes, quantifiers, and escaped commas while still supporting comma-separated pattern lists. Invalid expressions retain the existing argparse error handling. Verified with direct TOML/CLI reproductions, 74 config tests, the functional name-regex test, self-lint, and diff checks.",
+ "crash": null,
+ "duration_s": 1038,
+ "patch_lines": 52,
+ "turns": 41,
+ "went_back_turns": [
+  2,
+  5,
+  7,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  18,
+  19,
+  20,
+  22,
+  32,
+  36,
+  37
+ ],
+ "protocol_errors": 1,
+ "peak_items": 26,
+ "peak_prompt_tokens": 16559,
+ "total_prompt_tokens": 359701
+}

@@ -1,0 +1,18 @@
+{
+ "instance_id": "pytest-dev__pytest-10356",
+ "resolved": true,
+ "final": "Updated `get_unpacked_marks` to merge marks declared directly on every class in the MRO, so multiple-inheritance test classes retain all base-class markers. Decorator storage now explicitly reads only the target\u2019s own marks, preventing inherited marks from being copied or duplicated.\n\nThe repro and marker/collection suites pass: 171 passed, 1 skipped, 2 xfailed. The broader suite reached 2814 passed; remaining failures were unrelated environment/dependency issues.",
+ "crash": null,
+ "duration_s": 678,
+ "patch_lines": 47,
+ "turns": 15,
+ "went_back_turns": [
+  5,
+  9,
+  11
+ ],
+ "protocol_errors": 0,
+ "peak_items": 25,
+ "peak_prompt_tokens": 19757,
+ "total_prompt_tokens": 149439
+}

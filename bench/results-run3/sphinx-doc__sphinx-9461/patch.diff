@@ -1,0 +1,45 @@
+diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
+index 1cecb1f79..0fc8b19c8 100644
+--- a/sphinx/ext/autodoc/__init__.py
++++ b/sphinx/ext/autodoc/__init__.py
+@@ -2663,6 +2663,14 @@ class PropertyDocumenter(DocstringStripSignatureMixin, ClassLevelDocumenter):  #
+                             ) -> bool:
+         return inspect.isproperty(member) and isinstance(parent, ClassDocumenter)
+ 
++    def import_object(self, raiseerror: bool = False) -> bool:
++        ret = super().import_object(raiseerror)
++        if ret:
++            obj = inspect.getattr_static(self.parent, self.objpath[-1])
++            if isinstance(obj, classmethod):
++                self.object = obj.__func__
++        return ret
++
+     def document_members(self, all_members: bool = False) -> None:
+         pass
+ 
+diff --git a/sphinx/ext/autodoc/importer.py b/sphinx/ext/autodoc/importer.py
+index 1a8ea0973..210d522a6 100644
+--- a/sphinx/ext/autodoc/importer.py
++++ b/sphinx/ext/autodoc/importer.py
+@@ -9,6 +9,7 @@
+ """
+ 
+ import importlib
++import inspect
+ import traceback
+ import warnings
+ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
+@@ -277,6 +278,13 @@ def get_class_members(subject: Any, objpath: List[str], attrgetter: Callable
+             value = attrgetter(subject, name)
+             if ismock(value):
+                 value = undecorate(value)
++            if not inspect.isproperty(value):
++                # A classmethod-wrapped property evaluates to its value when
++                # accessed through a class.  Retrieve the descriptor itself.
++                static_value = inspect.getattr_static(subject, name)
++                if (isinstance(static_value, classmethod) and
++                        inspect.isproperty(static_value.__func__)):
++                    value = static_value.__func__
+ 
+             unmangled = unmangle(subject, name)
+             if unmangled and unmangled not in members:

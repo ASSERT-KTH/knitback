@@ -1,0 +1,17 @@
+{
+ "instance_id": "django__django-11400",
+ "resolved": false,
+ "final": "Updated RelatedFieldListFilter and RelatedOnlyFieldListFilter to respect ModelAdmin.ordering with a fallback to the related model\u2019s Meta.ordering. RelatedOnlyFieldListFilter now passes that ordering while preserving its limited choices. Verified with all 32 admin_filters tests.",
+ "crash": null,
+ "duration_s": 117,
+ "patch_lines": 27,
+ "turns": 8,
+ "went_back_turns": [
+  2,
+  8
+ ],
+ "protocol_errors": 0,
+ "peak_items": 21,
+ "peak_prompt_tokens": 14736,
+ "total_prompt_tokens": 80578
+}
