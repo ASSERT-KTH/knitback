@@ -169,3 +169,12 @@ def test_budget_shown_in_status(tools: Any, tmp_path: Path) -> None:
     client = Scripted([_r(0, done="ok")])
     _run(client, tools, tmp_path, context_budget=20000)
     assert client.calls[0][-1]["content"].endswith("(budget ~20000 tokens)")
+
+
+@pytest.mark.parametrize("usage", [
+    SimpleNamespace(prompt_tokens=10, completion_tokens=1, cached_tokens=8),
+    SimpleNamespace(prompt_tokens=10, completion_tokens=1, prompt_tokens_details=SimpleNamespace(cached_tokens=8)),
+])
+def test_cached_tokens_logged_from_either_usage_shape(usage: Any) -> None:
+    from selfctx._loop import _usage
+    assert _usage(SimpleNamespace(usage=usage))["cached_tokens"] == 8

@@ -70,10 +70,14 @@ def _usage(response: Any) -> dict[str, Any] | None:
     usage = getattr(response, "usage", None)
     if usage is None:
         return None
+    # OpenAI puts cache hits in prompt_tokens_details; agentknit's client (e.g. Kimi) at top level.
     details = getattr(usage, "prompt_tokens_details", None)
+    cached = getattr(details, "cached_tokens", None) if details else None
+    if cached is None:
+        cached = getattr(usage, "cached_tokens", None)
     return {"prompt_tokens": getattr(usage, "prompt_tokens", None),
             "completion_tokens": getattr(usage, "completion_tokens", None),
-            "cached_tokens": getattr(details, "cached_tokens", None) if details else None}
+            "cached_tokens": cached}
 
 
 def run(task: str, client: Client, model: str, tool_specs: list[dict[str, Any]],
