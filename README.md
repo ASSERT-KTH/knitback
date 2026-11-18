@@ -3,6 +3,7 @@
 A coding agent with a radically different loop: the model is aware of its own context and maintains it
 itself. The context is a sequence of numbered items; at each turn the model says which prefix to keep
 (`max_index`), and which file excerpts and tool results to append, in which order.
+Related work is surveyed in [PRIOR-ART.md](PRIOR-ART.md).
 
 ## Context model
 

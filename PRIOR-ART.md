@@ -1,0 +1,73 @@
+# Prior art
+
+Work related to selfctx, found by web search on 2026-11-18. Claims are taken from abstracts,
+documentation and secondary summaries, not from a full reading of each paper; many entries are
+2026 preprints. Numbers are the authors' own and unreplicated.
+
+## What selfctx combines
+
+1. The truncation point is a mandatory field of every model output (`max_index`), not an occasional
+   tool call.
+2. The context is cache-friendly by construction: items are only appended or truncated, never
+   edited in the middle (see "Caching awareness" in the README).
+3. The model sees each item's estimated size and a soft budget.
+4. One mechanism covers both undo (drop a failed attempt) and compaction (summarise in `thoughts`,
+   then cut before the exploration).
+
+No work found combines these; each has close neighbours below. None measures whether the model's
+own cut points fit the prompt cache.
+
+## The model manages its own context
+
+- [Focus: Active Context Compression](https://arxiv.org/abs/2601.07190) (2026). The agent decides when
+  to fold learnings into a persistent "Knowledge" block and drop raw history; reports that capable
+  models self-regulate context with the right tools and prompting. Closest to selfctx's
+  summarise-then-cut, observed in run 3. Single-author preprint.
+- [Scaling Long-Horizon LLM Agent via Context-Folding](https://arxiv.org/abs/2510.11967) (ByteDance Seed,
+  CMU, Stanford, 2025; [project page](https://context-folding.github.io/)). Actions *branch* into a
+  sub-trajectory and *return* it folded into a short summary; trained with RL (FoldGRPO); SWE and deep
+  research tasks. selfctx's compaction is an untrained, single-level form of this.
+- [Self-GC: Self-Governing Context for Long-Horizon LLM Agents](https://arxiv.org/abs/2607.00692)
+  (Xiaohongshu, 2026; [summary](https://www.deeplearning.ai/the-batch/llms-take-out-the-agents-trash)).
+  Context items are addressable objects with fold, mask and prune operations, decided by a separate
+  planner model rather than the acting model.
+- [Beyond Compaction: Structured Context Eviction](https://arxiv.org/abs/2606.11213) (2026). The agent
+  tags its trajectory as typed episodes; a deterministic policy evicts them when over budget.
+- [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/abs/2310.08560) (2023), now
+  [Letta](https://docs.letta.com/letta_memgpt). The LLM moves information between its context and
+  external storage with memory tools. Conceptual ancestor, with external memory instead of prefix
+  truncation.
+
+## Going back: rewind and backtracking
+
+- [Langroid `rewind_tool`](https://langroid.github.io/langroid/reference/agent/tools/rewind_tool).
+  The LLM backtracks to its nth previous message and replaces it. Nearest equivalent of `max_index`,
+  as an occasional tool rather than a per-turn field.
+- [AgentRewind](https://www.alphaxiv.org/abs/2608.14380) (2026). The agent calls a rewind tool when
+  stuck; reports that keeping failed attempts in context lowers success. Matches run 2, where going
+  back was used only to undo failed calls.
+- [Google ADK rewind](https://adk.iqai.com/docs/framework/runtime/rewind) and Claude Code's
+  `/rewind`: checkpoint rollback triggered by the runtime or the user, not chosen by the model.
+
+## Caching awareness
+
+- [Don't Break the Cache: An Evaluation of Prompt Caching](https://arxiv.org/abs/2601.06007) (2026).
+  Prompt caching cuts agent API cost by 45-80%; changing tool results can cause cache writes that are
+  never reused. Supports the stable-prefix, changing-tail layout.
+- [Inside the Scaffold: A Source-Code Taxonomy of Coding Agent Architectures](https://arxiv.org/abs/2604.03515)
+  (2026). Reports that SWE-agent truncates observations only every N steps so that the cached prefix
+  survives: the only cache-aware truncation in a coding agent found.
+- [KVTether](https://arxiv.org/abs/2609.39819) (2026). Lifecycle-aware KV-cache management for ReAct
+  agents, reclaiming discarded entries: the same concern on the serving side.
+- [Anthropic context editing](https://docs.claude.com/en/docs/build-with-claude/context-editing).
+  The API clears old tool results past a threshold and leaves placeholders: an edit in the middle
+  of the context, which selfctx avoids for cache reasons.
+
+## Pruning and compaction for coding agents
+
+- SWE-Pruner, SWE-MeM, Slipstream: pruning or learned compaction that keeps or improves SWE-bench
+  Verified scores ([practitioner overview](https://codex.danielvaughan.com/2026/06/17/context-pruning-research-swe-pruner-pichay-contextbudget-codex-cli-token-management-compaction/);
+  [SWE-Pruner Pro](https://arxiv.org/abs/2607.18213)).
+- [Token Reduction Is Not Cost Reduction](https://www.alphaxiv.org/abs/2607.12161) (2026). Compression can
+  corrupt the exact text a patch edits. A candidate explanation for the sympy regression after heavy
+  pruning in run 3 (`bench/results-run3/README.md`), not established.
