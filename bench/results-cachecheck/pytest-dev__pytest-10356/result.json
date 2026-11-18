@@ -1,0 +1,19 @@
+{
+ "instance_id": "pytest-dev__pytest-10356",
+ "resolved": true,
+ "final": "Updated class marker collection to merge marks from every class in MRO order, while ensuring newly applied decorators store only the class\u2019s own marks. Verified multiple-inheritance selection and ran the relevant tests: 463 passed, 21 skipped, 2 xfailed.",
+ "crash": null,
+ "duration_s": 274,
+ "patch_lines": 51,
+ "turns": 10,
+ "went_back_turns": [
+  2,
+  4,
+  5,
+  7
+ ],
+ "protocol_errors": 0,
+ "peak_items": 25,
+ "peak_prompt_tokens": 13466,
+ "total_prompt_tokens": 89821
+}

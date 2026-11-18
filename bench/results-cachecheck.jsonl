@@ -1,0 +1,2 @@
+{"instance_id": "pytest-dev__pytest-10356", "resolved": true, "turns": 10, "went_back_turns": [2, 4, 5, 7], "protocol_errors": 0, "crash": null}
+{"instance_id": "sympy__sympy-14248", "resolved": false, "turns": 81, "went_back_turns": [3, 4, 9, 10, 13, 14, 15, 21, 22, 23, 32, 38, 41, 42, 43, 44, 45, 46, 49, 54, 56, 57, 58, 62, 63, 65, 66, 67, 68, 69, 70, 71, 72, 74, 79, 80], "protocol_errors": 0, "crash": null}

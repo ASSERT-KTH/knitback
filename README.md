@@ -42,8 +42,15 @@ The core concept is that the context is prompt-cache aware by construction:
 The cost of a turn is thus driven by where the model cuts: keeping a long stable prefix is cheap,
 while cutting deep and re-requesting material sends it uncached again. The current system prompt
 says that every kept token is re-read each turn and explains compaction; it gives no cue about the
-cache. Cache hits are logged per turn (`usage.cached_tokens`) for measuring how well the model's cuts
-fit the cache.
+cache. Cache hits are logged per turn (`usage.cached_tokens`).
+
+Measured with Kimi K3.1 (`bench/results-cachecheck/README.md`): the provider side works as designed.
+After a turn without a cut, the next request is served from cache except ~570 tokens (the status
+message plus 256-token block rounding). The model, however, does not use the cache well: it
+optimises the cost it is shown (tokens against the budget) and compacts by cutting back to the first
+few items, then rebuilds its context uncached. On a long sympy task this gives a saw-tooth between
+~20k tokens and a few items, and 64 % of prompt tokens cached overall. It needs more cues: a cut at
+`k` makes everything after `k` uncached, and keeping a stable prefix is nearly free.
 
 ## Turn protocol
 
