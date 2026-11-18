@@ -1,22 +1,5 @@
 # Prior art
 
-Work related to selfctx, found by web search on 2026-11-18. Claims are taken from abstracts,
-documentation and secondary summaries, not from a full reading of each paper; many entries are
-2026 preprints. Numbers are the authors' own and unreplicated.
-
-## What selfctx combines
-
-1. The truncation point is a mandatory field of every model output (`max_index`), not an occasional
-   tool call.
-2. The context is cache-friendly by construction: items are only appended or truncated, never
-   edited in the middle (see "Caching awareness" in the README).
-3. The model sees each item's estimated size and a soft budget.
-4. One mechanism covers both undo (drop a failed attempt) and compaction (summarise in `thoughts`,
-   then cut before the exploration).
-
-No work found combines these; each has close neighbours below. None measures whether the model's
-own cut points fit the prompt cache.
-
 ## The model manages its own context
 
 - [Focus: Active Context Compression](https://arxiv.org/abs/2601.07190) (2026). The agent decides when
@@ -63,11 +46,3 @@ own cut points fit the prompt cache.
   The API clears old tool results past a threshold and leaves placeholders: an edit in the middle
   of the context, which selfctx avoids for cache reasons.
 
-## Pruning and compaction for coding agents
-
-- SWE-Pruner, SWE-MeM, Slipstream: pruning or learned compaction that keeps or improves SWE-bench
-  Verified scores ([practitioner overview](https://codex.danielvaughan.com/2026/06/17/context-pruning-research-swe-pruner-pichay-contextbudget-codex-cli-token-management-compaction/);
-  [SWE-Pruner Pro](https://arxiv.org/abs/2607.18213)).
-- [Token Reduction Is Not Cost Reduction](https://www.alphaxiv.org/abs/2607.12161) (2026). Compression can
-  corrupt the exact text a patch edits. A candidate explanation for the sympy regression after heavy
-  pruning in run 3 (`bench/results-run3/README.md`), not established.
