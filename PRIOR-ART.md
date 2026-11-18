@@ -46,3 +46,42 @@
   The API clears old tool results past a threshold and leaves placeholders: an edit in the middle
   of the context, which knitback avoids for cache reasons.
 
+- [TokenPilot: Cache-Efficient Context Management for LLM Agents](https://arxiv.org/abs/2606.17016)
+  (2026). Replaces volatile runtime values with stable placeholders and moves tool definitions
+  downstream so the prompt prefix is byte-identical from the first turn, then evicts by lifecycle.
+  The closest harness-side relative of knitback's append-or-truncate layout; the harness decides,
+  not the model.
+- [CliffCompaction: Cost-Efficient Compaction for Long-Horizon Coding Agents](https://arxiv.org/abs/2609.26779)
+  (2026). Argues the cache cost of compaction is modest because the compacted context is small and
+  compaction rare. knitback's measured saw-tooth (`bench/results-cachecheck/README.md`: compaction
+  every 6-15 turns, each followed by an uncached rebuild) is a counter-case.
+- [Cache-Aware Prompt Compression: A Two-Tier Cost Model for LLM API Caching](https://arxiv.org/abs/2607.15516)
+  (2026). Prices cached and uncached input separately: the cost model a cache cue to the model
+  would have to convey.
+- [OpenAI prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching).
+  Compaction prevents reuse from the first changed token onward; writing a prefix once and reusing
+  it once costs 1.35x its input price, against 2x for processing it twice.
+- ObsDrop ([preprint](https://www.researchsquare.com/article/rs-11684582)). Drops stale tool
+  observations from the serving engine's KV cache while the logical prefix stays unchanged: a
+  serving-side option, unavailable through a hosted API.
+- [Prompt Caching: Architectural Discipline for Agents](https://www.agentpatterns.ai/context-engineering/prompt-caching-architectural-discipline/)
+  (practitioner guide). Cache-safe compaction keeps the identical prefix and appends the summary as
+  a new message. In knitback terms: cut late and let the summary sit on a stable prefix, which the
+  model did not do unprompted.
+
+## Cost cues shown to the model
+
+No work found shows the model its own cache hits or tells it that a cut makes everything after it
+uncached: cache awareness lives in the harness or the serving engine. The nearest work shows the
+model a resource count.
+
+- [Budget-Aware Tool-Use Enables Effective Agent Scaling](https://arxiv.org/abs/2511.17006) (Google
+  DeepMind, NYU, UCSB, 2025). Agents without budget awareness gain little from larger tool budgets;
+  a Budget Tracker that shows the agent its remaining resources fixes it. Closest analogue of
+  knitback's `[context] ... (budget ~B tokens)` status, with the same limit: the model optimises the
+  cost it is shown, and knitback's status shows tokens, not cache.
+- [INTENT](https://arxiv.org/abs/2602.11541) (2026). Forecasts tool costs with a learned world model
+  to stay within an economic budget.
+- [Token awareness](https://www.monperrus.net/martin/token-awareness), implemented in
+  [agentknit](https://github.com/monperrus/agentknit). A true countdown of the token budget in the
+  model's context: a count, not a cache cue.
