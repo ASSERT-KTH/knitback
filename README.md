@@ -1,9 +1,13 @@
-# selfctx
+# knitback
 
 A coding agent with a radically different loop: the model is aware of its own context and maintains it
 itself. The context is a sequence of numbered items; at each turn the model says which prefix to keep
 (`max_index`), and which file excerpts and tool results to append, in which order.
 Related work is surveyed in [PRIOR-ART.md](PRIOR-ART.md).
+
+The name comes from knitting: to knit back is to undo stitches to an earlier point, which is what
+`max_index` does; it is built on [agentknit](../agentknit). Before 2026-11-18 the tool was called
+`selfctx`, the name used in `prereg/` and the run logs under `bench/`.
 
 ## Context model
 
@@ -59,7 +63,7 @@ The prompt tells the model that it controls this order.
 
 ## Implementation
 
-The `selfctx` package: `_items.py` (items, rendering, truncation), `_protocol.py` (system prompt,
+The `knitback` package: `_items.py` (items, rendering, truncation), `_protocol.py` (system prompt,
 turn schema, output parsing), `_loop.py` (the turn loop), `__main__.py` (CLI).
 
 agentknit (`../agentknit`, editable path dependency) supplies only the model client and the tools
@@ -82,10 +86,10 @@ uv venv .venv && uv pip install -p .venv -e '.[dev]'
 ## Usage
 
 ```
-selfctx "make the tests pass"            # prints the final answer
-selfctx --json "make the tests pass"     # {"final", "turns", "items", "log"}
-echo "task" | selfctx
-selfctx --model k3.1-pro --inference-db kimi-coding --max-turns 50 --context-budget 20000 --log-dir runs "task"
+knitback "make the tests pass"            # prints the final answer
+knitback --json "make the tests pass"     # {"final", "turns", "items", "log"}
+echo "task" | knitback
+knitback --model k3.1-pro --inference-db kimi-coding --max-turns 50 --context-budget 20000 --log-dir runs "task"
 ```
 
 Defaults: Kimi K3.1 Pro through the agentknit inference-db entry `kimi-coding`.
@@ -105,7 +109,7 @@ jq -c '[.turn, .items_before, .max_index, .items_after]' runs/*.jsonl
 
 ## Benchmark
 
-`bench/run_swebench.py` runs selfctx on SWE-bench Verified instances (`bench/tasks.json`) in their
+`bench/run_swebench.py` runs knitback on SWE-bench Verified instances (`bench/tasks.json`) in their
 Docker images, without network and with file tools confined to the repository, and judges them with
 the official harness (swebench 4.1.0, `bench/.venv`). `bench/prune.py` measures go-backs and prunes.
 Every run is pre-registered in `prereg/`; results and verdicts are in `bench/results*/README.md`.
@@ -113,7 +117,7 @@ Every run is pre-registered in `prereg/`; results and verdicts are in `bench/res
 ## Development
 
 ```
-.venv/bin/pytest -q && .venv/bin/ruff check . && .venv/bin/mypy selfctx
+.venv/bin/pytest -q && .venv/bin/ruff check . && .venv/bin/mypy knitback
 ```
 
 The loop tests use a scripted fake model; `tests/fixtures/buggy/` is a small project with failing

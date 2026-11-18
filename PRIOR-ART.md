@@ -4,12 +4,12 @@
 
 - [Focus: Active Context Compression](https://arxiv.org/abs/2601.07190) (2026). The agent decides when
   to fold learnings into a persistent "Knowledge" block and drop raw history; reports that capable
-  models self-regulate context with the right tools and prompting. Closest to selfctx's
+  models self-regulate context with the right tools and prompting. Closest to knitback's
   summarise-then-cut, observed in run 3. Single-author preprint.
 - [Scaling Long-Horizon LLM Agent via Context-Folding](https://arxiv.org/abs/2510.11967) (ByteDance Seed,
   CMU, Stanford, 2025; [project page](https://context-folding.github.io/)). Actions *branch* into a
   sub-trajectory and *return* it folded into a short summary; trained with RL (FoldGRPO); SWE and deep
-  research tasks. selfctx's compaction is an untrained, single-level form of this.
+  research tasks. knitback's compaction is an untrained, single-level form of this.
 - [Self-GC: Self-Governing Context for Long-Horizon LLM Agents](https://arxiv.org/abs/2607.00692)
   (Xiaohongshu, 2026; [summary](https://www.deeplearning.ai/the-batch/llms-take-out-the-agents-trash)).
   Context items are addressable objects with fold, mask and prune operations, decided by a separate
@@ -44,5 +44,5 @@
   agents, reclaiming discarded entries: the same concern on the serving side.
 - [Anthropic context editing](https://docs.claude.com/en/docs/build-with-claude/context-editing).
   The API clears old tool results past a threshold and leaves placeholders: an edit in the middle
-  of the context, which selfctx avoids for cache reasons.
+  of the context, which knitback avoids for cache reasons.
 

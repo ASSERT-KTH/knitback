@@ -23,7 +23,7 @@ a schema `pattern` is violated even with `strict: true`. There is no grammar sup
   mode including the unconstrained control, so these do not discriminate; structural enforcement
   (keys, types, enums, item counts) is undetermined.
 
-## Implication for selfctx
+## Implication for knitback
 
 `json_schema` (or a forced function) lowers protocol errors but cannot replace `parse` validation.
 Guaranteed-valid output needs an endpoint with real constrained decoding.

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from selfctx._protocol import (
+from knitback._protocol import (
     FileRequest,
     ProtocolError,
     ToolRequest,

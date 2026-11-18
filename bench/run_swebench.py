@@ -1,11 +1,11 @@
-"""Run selfctx on SWE-bench Verified instances listed in `tasks.json`, then judge with the official harness.
+"""Run knitback on SWE-bench Verified instances listed in `tasks.json`, then judge with the official harness.
 
 Per instance: pull the image, copy `/testbed` to the host, run a container with that copy bind-mounted at
-`/testbed`, run the selfctx loop with cwd = the copy (file requests and edits act on the host copy,
+`/testbed`, run the knitback loop with cwd = the copy (file requests and edits act on the host copy,
 `exec_shell` runs inside the container, without network, in the `testbed` conda env), save the diff as a prediction,
 evaluate it with `swebench.harness.run_evaluation` (bench/.venv), then remove container and image.
 
-Usage (from the repo root, with the selfctx venv):
+Usage (from the repo root, with the knitback venv):
     .venv/bin/python bench/run_swebench.py [INSTANCE_ID ...] [--max-turns 100] [--keep-image]
         [--out bench/results] [--context-budget TOKENS]
 Outputs: <out>/<instance_id>/{run.jsonl, patch.diff, result.json, eval/}
@@ -28,7 +28,7 @@ from typing import Any
 import agentknit
 from agentknit.tool_library import TOOL_LIBRARY
 
-from selfctx._loop import run
+from knitback._loop import run
 
 BENCH = Path(__file__).resolve().parent
 RESULTS = BENCH / "results"
@@ -102,7 +102,7 @@ def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool, results
         shutil.rmtree(out)
     out.mkdir(parents=True)
     workdir = out / "testbed"
-    container = f"selfctx-{iid.lower()}"
+    container = f"knitback-{iid.lower()}"
     sh("docker", "pull", "-q", image)
     sh("docker", "rm", "-f", container, check=False)
     tmp = sh("docker", "create", image, capture=True).strip()
@@ -145,13 +145,13 @@ def run_instance(task: dict[str, Any], max_turns: int, keep_image: bool, results
     sh("docker", "run", "--rm", "-v", f"{out}:/out", image, "rm", "-rf", "/out/testbed")
 
     pred = out / "prediction.jsonl"
-    pred.write_text(json.dumps({"instance_id": iid, "model_name_or_path": "selfctx-k3.1", "model_patch": patch}) + "\n")
+    pred.write_text(json.dumps({"instance_id": iid, "model_name_or_path": "knitback-k3.1", "model_patch": patch}) + "\n")
     (out / "eval").mkdir()
     subprocess.run([str(BENCH / ".venv/bin/python"), "-m", "swebench.harness.run_evaluation",
                     "--dataset_name", DATASET, "--predictions_path", str(pred), "--instance_ids", iid,
-                    "--run_id", "selfctx", "--max_workers", "1"],
+                    "--run_id", "knitback", "--max_workers", "1"],
                    cwd=out / "eval", stdout=(out / "eval/eval.log").open("w"), stderr=subprocess.STDOUT, check=False)
-    summary_file = out / "eval" / "selfctx-k3.1.selfctx.json"  # the harness's run summary
+    summary_file = out / "eval" / "knitback-k3.1.knitback.json"  # the harness's run summary
     resolved = None
     if summary_file.exists():
         resolved = iid in json.loads(summary_file.read_text()).get("resolved_ids", [])

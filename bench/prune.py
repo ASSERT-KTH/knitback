@@ -1,4 +1,4 @@
-"""Pruning measures for selfctx run logs.
+"""Pruning measures for knitback run logs.
 
 Usage: python bench/prune.py RESULTS_DIR [RESULTS_DIR ...]
 Prints one JSON line per run: go-back turns, pruning turns (go-back dropping >= 5 items),
@@ -16,7 +16,7 @@ PRUNE_MIN_ITEMS = 5
 
 
 def tokens(text: str) -> int:
-    return (len(text) + 3) // 4  # same estimate as selfctx._items.tokens
+    return (len(text) + 3) // 4  # same estimate as knitback._items.tokens
 
 
 def measure(log: Path) -> dict[str, object]:

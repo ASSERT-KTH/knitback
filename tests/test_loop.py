@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from agentknit import default_tool_spec
 
-from selfctx._loop import run
+from knitback._loop import run
 
 
 class Scripted:
@@ -176,5 +176,5 @@ def test_budget_shown_in_status(tools: Any, tmp_path: Path) -> None:
     SimpleNamespace(prompt_tokens=10, completion_tokens=1, prompt_tokens_details=SimpleNamespace(cached_tokens=8)),
 ])
 def test_cached_tokens_logged_from_either_usage_shape(usage: Any) -> None:
-    from selfctx._loop import _usage
+    from knitback._loop import _usage
     assert _usage(SimpleNamespace(usage=usage))["cached_tokens"] == 8
