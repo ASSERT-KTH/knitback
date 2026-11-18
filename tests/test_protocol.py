@@ -93,3 +93,10 @@ def test_schema_valid_reply_parses() -> None:
     reply = json.dumps({"thoughts": "", "max_index": 0, "done": None,
                         "requests": [{"file": "a", "lines": None}, {"tool": "exec_shell", "args": {}}]})
     assert parse(reply, 1, TOOLS).requests == [FileRequest("a", None), ToolRequest("exec_shell", {})]
+
+
+def test_system_prompt_says_thoughts_are_the_summary_and_dropped_items_are_gone() -> None:
+    prompt = system_prompt(SPECS)
+    assert 'Your "thoughts" are your summary' in prompt
+    assert "A dropped item cannot be fetched back" in prompt
+    assert "short reasoning" not in prompt

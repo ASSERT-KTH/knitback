@@ -13,3 +13,4 @@ bench/results*/*/eval/logs/
 bench/validate/logs/
 bench/results.err
 bench/results-run3.err
+bench/results-cachecheck.err

@@ -47,6 +47,12 @@ At each turn, the model outputs one JSON object:
    - a tool call, whose result is the new item.
 3. `thoughts`, and `done` (the final answer, which ends the run).
 
+The reasoning is the summary. The reply that cuts is written while the model still sees the items it
+drops, and it is appended right after the cut, so its `thoughts` carry whatever survives of them;
+there is no separate summary operation. A dropped item cannot be fetched back: a file excerpt can be
+requested again (exact text while the file is unchanged), a command can be run again (at its cost,
+with its side effects), and anything else must have been copied into `thoughts`.
+
 The next turn's context is items `0..max_index`, followed by the model output as one item,
 then one new item per request, in the order the model listed them.
 The prompt tells the model that it controls this order.

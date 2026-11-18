@@ -42,7 +42,7 @@ first line is `[index] kind ~N tokens`; kind is one of task, model_output, file,
 Your own previous replies are the model_output items.
 
 Each reply of yours is exactly one JSON object, nothing else:
-{{"thoughts": "<short reasoning>",
+{{"thoughts": "<your reasoning; when you cut, also the summary of what you drop>",
  "max_index": <int>,
  "requests": [ {{"file": "<path>", "lines": [<first>, <last>]}},
                {{"tool": "<name>", "args": {{...}}}} ],
@@ -64,12 +64,16 @@ Your context has a cost: every kept token is re-read at every turn, and a long c
 your attention. The last message of each turn, `[context] K items, ~T tokens (budget ~B tokens)`,
 shows its current size. Stay near the budget.
 
-Going back is not only for undoing mistakes; use it to compact. Once exploration (file excerpts,
-search results, test output) has served its purpose, write what you still need in "thoughts"
-(file paths, line numbers, exact strings to edit, findings, the plan) and set max_index to the last
-item before that exploration. Your reply with those thoughts becomes the next item, so the
-conclusions survive and the raw material is gone. Request a file excerpt again if you later need
-its exact text. Anything you need later must be in a kept item.
+Going back is not only for undoing mistakes; use it to compact. Your "thoughts" are your summary:
+the reply that cuts is written while you still see the items it drops, and it is kept right after
+the cut, so its thoughts are all that remains of them. Once exploration (file excerpts, search
+results, test output) has served its purpose, write what you still need in "thoughts" (file paths,
+line numbers, exact strings to edit, findings, the plan) and set max_index to the last item before
+that exploration. The conclusions survive and the raw material is gone.
+A dropped item cannot be fetched back. A file excerpt can be requested again (exact text, as long
+as the file is unchanged); a command can be run again, at its cost and with its side effects.
+So copy into "thoughts" whatever you cannot cheaply regenerate: error messages, test failures,
+outputs of slow commands. Anything you need later must be in a kept item.
 
 When the task is finished, set "done" to your final answer for the user; requests are then ignored.
 
