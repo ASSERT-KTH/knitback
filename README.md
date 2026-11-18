@@ -5,9 +5,16 @@ itself. The context is a sequence of numbered items; at each turn the model says
 (`max_index`), and which file excerpts and tool results to append, in which order.
 Related work is surveyed in [PRIOR-ART.md](PRIOR-ART.md).
 
+knitback is one of the [coding agent concept cars](https://www.monperrus.net/martin/coding-agent-concept-cars):
+like a concept car, it is a prototype built not for production but to push one design idea to its
+logical extreme and see what happens. Here the idea is that the model owns its context: every turn it
+decides what to keep, what to drop and what to fetch, within a context designed to stay friendly to
+the prompt cache. Like the other concept cars, it is built on
+[agentknit](https://github.com/monperrus/agentknit).
+
 The name comes from knitting: to knit back is to undo stitches to an earlier point, which is what
-`max_index` does; it is built on [agentknit](../agentknit). Before 2026-11-18 the tool was called
-`selfctx`, the name used in `prereg/` and the run logs under `bench/`.
+`max_index` does. Before 2026-11-18 the tool was called `selfctx`, the name used in `prereg/` and
+the run logs under `bench/`.
 
 ## Context model
 
@@ -66,7 +73,7 @@ The prompt tells the model that it controls this order.
 The `knitback` package: `_items.py` (items, rendering, truncation), `_protocol.py` (system prompt,
 turn schema, output parsing), `_loop.py` (the turn loop), `__main__.py` (CLI).
 
-agentknit (`../agentknit`, editable path dependency) supplies only the model client and the tools
+[agentknit](https://github.com/monperrus/agentknit) supplies only the model client and the tools
 (`write_file`, `str_replace`, `exec_shell`; files are read through file requests). No agentknit
 session runs, so none of its compaction or awareness features interfere: the model alone manages
 its context.
@@ -79,7 +86,10 @@ unknown or missing arguments are refused with the expected parameter list. Tool 
 
 ## Install
 
+agentknit is an editable path dependency, expected next to this repository:
+
 ```
+git clone https://github.com/monperrus/agentknit ../agentknit
 uv venv .venv && uv pip install -p .venv -e '.[dev]'
 ```
 
